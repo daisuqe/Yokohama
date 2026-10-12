@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Yokohama</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;color:#fff;overscroll-behavior:none;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
+    background:linear-gradient(180deg,#b0d6ee 0%,#82bbdd 50%,#6cb6d4 100%);}   /* ハーバーブルー: 空から海へのグラデーション */
+  canvas{position:fixed;left:0;top:0;width:100%;height:100%;touch-action:none}
+  #hud{position:fixed;left:0;right:0;top:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;
+    padding:8px 14px;padding-top:max(8px,env(safe-area-inset-top));
+    background:rgba(10,20,26,.6);backdrop-filter:blur(4px);font-size:18px}
+  #hud b{font-size:22px;margin-left:8px}
+  #scoreBox b{font-size:44px;line-height:1;margin-left:10px;letter-spacing:.01em;text-shadow:0 2px 6px rgba(0,0,0,.45)}
+  #hud .sp{flex:1}
+  #hud .btns{display:flex;gap:6px;flex-wrap:wrap}
+  button{background:#4caf50;color:#fff;border:0;border-radius:6px;padding:10px 16px;font-size:17px;cursor:pointer;min-height:44px;touch-action:manipulation}
+  button.sub{background:#546e7a}
+  button:hover{filter:brightness(1.12)}
+  #scoreBox{cursor:pointer;border-bottom:1px dotted #9db;} #scoreBox small{margin-left:3px;opacity:.7}
+  button:disabled{opacity:.35;cursor:default;filter:none}
+  #undoBtn{background:#f9a825;color:#222;font-weight:700}
+  #panel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:5}
+  #panelBox{background:#1d2c35;border-radius:10px;padding:14px 18px;max-width:92vw;max-height:88vh;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  #panelBox h3{margin:0 0 10px;font-size:32px}
+  #panelBox table{border-collapse:collapse;margin:10px 0;font-size:18px;width:100%}
+  #panelBox th,#panelBox td{padding:3px 10px;text-align:right;border-bottom:1px solid rgba(255,255,255,.1)}
+  #panelBox th:first-child,#panelBox td:first-child{text-align:left}
+  #panelBox i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+  #panelBox p{margin:8px 0;font-size:14px;opacity:.75}
+  #panelBox button{margin-top:6px;width:100%}
+  #mapTitle{position:fixed;left:14px;font-size:30px;font-weight:700;letter-spacing:.03em;pointer-events:none;
+    color:#fff;text-shadow:0 1px 4px rgba(10,30,50,.6)}
+  #msg{position:fixed;left:10px;right:10px;bottom:max(10px,env(safe-area-inset-bottom));text-align:center;
+    font-size:17px;color:#eaf3f8;pointer-events:none;text-shadow:0 1px 3px rgba(10,30,50,.6)}
+  @media (max-width:640px){
+    #hud{gap:4px 12px;font-size:14px} #hud b{font-size:18px;margin-left:4px}
+    #scoreBox b{font-size:34px}
+    button{padding:8px 11px;font-size:14px;min-height:40px}
+    #mapTitle{font-size:22px} #msg{font-size:13px}
+    #panelBox h3{font-size:26px} #panelBox table{font-size:15px}
+  }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="hud">
+  <div id="scoreBox" title="Tap for breakdown">Score<b id="score">0</b><small>&#9662;</small></div>
+  <div>Turn<b id="turns">0</b></div>
+  <div>Filled<b id="fill">0%</b></div>
+  <div>Pieces<b id="count">0</b></div>
+  <div class="sp"></div>
+  <div class="btns">
+  <button id="undoBtn">Undo</button>
+  <button class="sub" id="infoBtn">Labels: ON</button>
+  <button class="sub" id="viewBtn">Reset View</button>
+  <button class="sub" id="hintBtn">Hint</button>
+  <button id="newBtn">New Game</button>
+  </div>
+</div>
+<div id="panel"><div id="panelBox"><div id="panelBody"></div><button id="panelClose">Close</button></div></div>
+<div id="mapTitle"></div>
+<div id="msg"></div>
+
+<script>
+"use strict";
+// ================= 設定 =================
+// ---- マップ定義 (x:左→右, y:上→下) ----
+// . 更地(建物を置ける)  r 道  W 運河  R 線路  S 駅
+// 今後 bayside / chinatown を MAPS に追加し、?map=bayside のように指定して読み込む
+const MAPS = {
+  yokohama: {
+    title: 'Yokohama Station',
+    train: {x:12},                 // 電車が走る線路の列 (無ければ null)
+    rows: [
+  'rrrrrrrrrrrrr',
+  'r.r........rR',
+  'rWrWWWWWW..rR',
+  'rrrrrrrrrrrrR',
+  'r..r....Wr.rR',
+  'r..r....Wr.rS',
+  'rrrrrrrrrrrrS',
+  'r..r...rWr.rS',
+  'r..r...rWr.rR',
+  'rrrrrrrrWrrrR',
+  'r......rW...R',
+  'rrrrrrrrW...R',
+  'rWWWWWWWWWWWR'
+]
+  },
+  // bayside:   { title:'Bayside',    train:null, rows:[ ... ] },
+  // chinatown: { title:'Chinatown',  train:null, rows:[ ... ] },
+};
+const MAPID = new URLSearchParams(location.search).get('map');
+const MAPDEF = MAPS[MAPID] || MAPS.yokohama;
+const N = MAPDEF.rows.length;  // 盤面サイズ (N x N)
+const TW = 64, TH = 32;       // タイル幅/高さ (2:1 のアイソメトリック)
+const INIT_RATE = 0.4;        // 初期の建物の割合(中央寄りに配置)
+// 新築のルール: レベル4以上(数字8以上)を作ったら新築2件、レベル3以下は1件。新築できる更地がなくなったらゲームオーバー
+// 長く遊べる仕組み: 大きな建物を作ると、盤面の低いレベルの駒がすべて消える
+//   レベル6(数字32) → レベル1(数字1) / 64 → レベル2以下(2以下) / 128 → レベル3以下(4以下) / 256 → レベル4以下(8以下) / 512 → レベル5以下(16以下) ... (数字/32 以下)
+const BIG_VALUE = 8;
+const CLEAR_VALUE = 32;
+const LV_PROB = [.45,.35,.20]; // 新築が1,2,3段階目になる確率       // 初期配置率
+const BUILD_MS = 1000;        // 新築の工事時間(柵で囲う)
+// 駒の種類 (同じ種類・同じ数字だけ合体できる)
+const KINDS = [
+  {name:'Residential',          top:'#6f9fd6', num:'#ffffff', ink:'#0a2f66', numC:'#4388ff', icon:'house', tint:'#2f7bff', tintA:.49, gamma:.1,   // 青の濃さ(以前の0.7の7割)
+   tiers:['Tent','Hut','Log Cabin','Bungalow','Two-Story House','Three-Story House','Mansion','Apartment','Low-Rise Condo','Mid-Rise Condo','Tower Condo']},
+  {name:'Shops & Fun', top:'#d9736f', num:'#ffffff', ink:'#6b0d0d', numC:'#ff1a1a', icon:'shop', tint:'#ff3b30', tintA:.22,
+   tiers:['Food Stall','Kiosk','Shop','Convenience Store','Cafe & Diner','Drugstore','Game Center','Supermarket','Cinema','Shopping Mall','Department Store']},
+  {name:'Nature & Parks',      top:'#6fbf86', num:'#ffffff', ink:'#0b4a1c', numC:'#00b52b', icon:'tree', tint:'#7ee02e', tintA:.4,
+   tiers:['Lawn','Bush','Hedge','Azalea','Small Tree','Flower Bed','Flower Bed & Bench','Tree','Small Park','Park','Grand Park']
+  },
+];
+const nameOf = (k,v) => { const t=KINDS[k].tiers; return t[Math.min(Math.round(Math.log2(v)),t.length-1)]; };
+// ---- 地形 ----
+
+const LAND=0, ROAD=1, WATER=2, BRIDGE=3, RAIL=4, STATION=5;
+const CH = {'.':LAND,'r':ROAD,'W':WATER,'R':RAIL,'S':STATION};
+const terrain = MAPDEF.rows.map(row => [...row].map(c => CH[c]));
+// 運河を左右または上下に挟んでいる道 = 橋
+for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+  if(terrain[y][x]!==ROAD) continue;
+  const w=(a,b)=>a>=0&&b>=0&&a<N&&b<N&&terrain[b][a]===WATER;
+  if((w(x-1,y)&&w(x+1,y))||(w(x,y-1)&&w(x,y+1))) terrain[y][x]=BRIDGE;
+}
+const LABELS = [];
+const DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
+
+// ================= 状態 =================
+let grid, kind, stats, score, sel, targets, mover, effects, anims, hover, over;
+let turns = 0;           // 合体した回数
+let boardFull = false;  // 新築を置く更地がなくなった(= ゲームオーバー待ち)
+let preview = null;     // タッチ操作で「1回タップした接続先」(もう一度タップで合体)
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const $ = id => document.getElementById(id);
+
+function randVal(){                    // 1,2,3段階目 = 数字 1,2,4
+  const r=Math.random();
+  return r<LV_PROB[0] ? 1 : r<LV_PROB[0]+LV_PROB[1] ? 2 : 4;
+}
+// ---- 種類ごとの画像: Icons/house01～11.png, tree01～11.png (48x48, 01=1 ... 11=1024) ----
+const ICON_IMGS = {};
+for(const kd of KINDS) if(kd.icon) ICON_IMGS[kd.icon]=Array.from({length:11}, (_,i) => { const im=new Image(); im.src=`Icons/${kd.icon}${String(i+1).padStart(2,'0')}.png`; return im; });
+let showInfo = true;     // 数字と種類色の表示ON/OFF
+const tintCache = new Map();
+function tinted(im,k){                 // 画像に種類の色を重ねたものを作る
+  const key=im.src+'|'+k; let c=tintCache.get(key);
+  if(c) return c;
+  const kd=KINDS[k], W=im.naturalWidth, H=im.naturalHeight;
+  c=document.createElement('canvas'); c.width=W; c.height=H;
+  const g=c.getContext('2d');
+  g.drawImage(im,0,0);
+  if(kd.gamma){
+    // 明るさ補正: 画像を自身に「スクリーン」合成 = 中間調を持ち上げるガンマ補正に近い(白飛びしにくい)
+    g.globalCompositeOperation='screen'; g.globalAlpha=kd.gamma; g.drawImage(im,0,0);
+    // 色の重ね: 「カラー」合成 = 明るさを保ったまま色相・彩度だけ青へ寄せる(暗くならない)
+    const t=document.createElement('canvas'); t.width=W; t.height=H;
+    const tg=t.getContext('2d');
+    tg.drawImage(c,0,0);
+    tg.globalCompositeOperation='color'; tg.globalAlpha=kd.tintA; tg.fillStyle=kd.tint; tg.fillRect(0,0,W,H);
+    tg.globalCompositeOperation='destination-in'; tg.globalAlpha=1; tg.drawImage(im,0,0);   // 元の絵の形で切り抜く
+    g.globalCompositeOperation='source-over'; g.globalAlpha=1; g.clearRect(0,0,W,H); g.drawImage(t,0,0);
+  } else {
+    g.globalCompositeOperation='source-atop';
+    g.globalAlpha=kd.tintA; g.fillStyle=kd.tint; g.fillRect(0,0,W,H);
+  }
+  tintCache.set(key,c); return c;
+}
+const kindImg = (k,v) => { const a=ICON_IMGS[KINDS[k].icon]; const im=a&&a[Math.round(Math.log2(v))]; return im && im.complete && im.naturalWidth ? im : null; };
+
+const randKind = () => Math.random()*KINDS.length|0;
+function newGame(){
+  grid = Array.from({length:N}, () => Array(N).fill(0));
+  kind = Array.from({length:N}, () => Array(N).fill(0));
+  const cells = [];
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(terrain[y][x]===LAND) cells.push([x,y]);
+  const mid=(N-1)/2;                      // 中心からの距離(+ゆらぎ)で並べ、近い順に配置
+  for(const c of cells) c.d=Math.hypot(c[0]-mid,c[1]-mid)+Math.random()*3;
+  cells.sort((a,b)=>a.d-b.d);
+  const n = Math.round(cells.length*INIT_RATE);
+  const kinds=Array.from({length:n},(_,i)=>i%KINDS.length); shuffle(kinds);   // 最初の種類の比率は均等(1個以内の差)
+  for(let i=0;i<n;i++){ const [x,y]=cells[i]; grid[y][x]=randVal(); kind[y][x]=kinds[i]; anims.set(y*N+x,{t:performance.now()+i*4,type:'spawn'}); }
+  sites.clear(); undoStack.length=0; score=0; turns=0; stats=newStats(); sel=null; targets=new Map(); preview=null; mover=null; effects=[]; hover=null; over=false; boardFull=false;
+  setMsg('Select a piece, then click a matching one (same type & number) to merge. Touch: tap the match once to preview, again to merge. Right-click / Esc / tap the piece again to cancel.');
+  hud();
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.random()*(i+1)|0; [a[i],a[j]]=[a[j],a[i]]; } }
+function setMsg(s){ $('msg').textContent = s; }
+function hud(){
+  let cnt=0;
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(grid[y][x]) cnt++;
+  $('score').textContent = score.toLocaleString('en-US');
+  $('count').textContent = cnt;
+  $('turns').textContent = turns;
+  const landTotal = terrain.flat().filter(t=>t===LAND).length;      // 建物を置ける更地の数
+  $('fill').textContent = Math.round((cnt+sites.size)/landTotal*100)+'%';   // 駒 + 工事中の更地
+  $('undoBtn').disabled = !undoStack.length || !!mover;
+}
+anims = new Map();
+
+// ================= ルール =================
+const inb = (x,y) => x>=0 && y>=0 && x<N && y<N;
+// 駒が通れるのは 白・道・橋 のみ(運河・線路・駅は不可)
+const walkable = t => t===LAND||t===ROAD||t===BRIDGE;
+const free = (x,y) => inb(x,y) && grid[y][x]===0 && walkable(terrain[y][x]) && !sites.has(y*N+x);
+
+// (ax,ay)の駒が「0回か1回曲がって」隣接できる同数字の駒 -> 経路
+function targetsOf(ax, ay){
+  const v = grid[ay][ax];
+  if(v >= (KINDS[kind[ay][ax]].max||Infinity)) return new Map();   // その種類の最大値には合体先がない
+  const reach = new Map();
+  const add = p => { const [x,y]=p[p.length-1], k=y*N+x; if(!reach.has(k)) reach.set(k,p); };
+  add([[ax,ay]]);
+  for(const d1 of DIRS){
+    let path=[[ax,ay]], x=ax+d1[0], y=ay+d1[1];
+    while(free(x,y)){
+      path=[...path,[x,y]]; add(path);
+      for(const d2 of DIRS){
+        if(d1[0]*d2[0]+d1[1]*d2[1]!==0) continue;   // 直角のみ
+        let p2=path, x2=x+d2[0], y2=y+d2[1];
+        while(free(x2,y2)){ p2=[...p2,[x2,y2]]; add(p2); x2+=d2[0]; y2+=d2[1]; }
+      }
+      x+=d1[0]; y+=d1[1];
+    }
+  }
+  const res = new Map();
+  for(const [, path] of reach){
+    const [x,y]=path[path.length-1];
+    for(const [dx,dy] of DIRS){
+      const nx=x+dx, ny=y+dy;
+      if(!inb(nx,ny) || (nx===ax&&ny===ay) || grid[ny][nx]!==v || kind[ny][nx]!==kind[ay][ax]) continue;
+      const k=ny*N+nx, old=res.get(k);
+      if(!old || old.length>path.length) res.set(k,path);
+    }
+  }
+  return res;
+}
+function anyMove(){
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(grid[y][x] && targetsOf(x,y).size) return [x,y];
+  return null;
+}
+
+// ---- スコア: 合体で出来た建物のレベルが上がるほど急激に増える (10 x 4^(レベル-1)) ----
+const tierOf = v => Math.round(Math.log2(v));
+const pointsFor = nv => 10*Math.pow(4, tierOf(nv)-1);
+const newStats = () => ({pts:KINDS.map(()=>0), merges:KINDS.map(()=>Array(14).fill(0))});
+function showBreakdown(){
+  const fmt=n=>n.toLocaleString('en-US');
+  let rows='';
+  for(let t=1;t<=10;t++){
+    const v=Math.pow(2,t), cnt=KINDS.map((_,k)=>stats.merges[k][t]);
+    rows+=`<tr><td>${v}</td><td>${fmt(pointsFor(v))}</td>${cnt.map(c=>`<td>${c||'-'}</td>`).join('')}</tr>`;
+  }
+  $('panelBody').innerHTML =
+    `<h3>Score ${fmt(score)}</h3>`+
+    `<table><tr><th>By type</th><th>Points</th></tr>${KINDS.map((kd,k)=>`<tr><td><i style="background:${kd.tint}"></i>${kd.name}</td><td>${fmt(stats.pts[k])}</td></tr>`).join('')}</table>`+
+    `<table><tr><th>Merged into</th><th>Pts each</th>${KINDS.map(kd=>`<th><i style="background:${kd.tint}"></i></th>`).join('')}</tr>${rows}</table>`+
+    `<p>Points per merge = 10 x 4^(level-1). Columns show merge counts per type.</p>`;
+  $('panel').style.display='flex';
+}
+// ---- Undo ----
+const undoStack = [];
+function snapshot(){
+  return {grid:grid.map(r=>r.slice()), kind:kind.map(r=>r.slice()), score, turns, stats:JSON.parse(JSON.stringify(stats)),
+    sites:[...sites.values()].map(({x,y,k,v})=>({x,y,k,v}))};
+}
+function undo(){
+  if(mover || !undoStack.length) return;
+  const h=undoStack.pop(), now=performance.now();
+  grid=h.grid; kind=h.kind; score=h.score; turns=h.turns; stats=h.stats;
+  sites.clear(); for(const st of h.sites) sites.set(siteKey(st.x,st.y),{...st,t0:now});
+  anims.clear(); effects=[]; over=false; boardFull=false; sel=null; targets=new Map(); preview=null;
+  hud(); setMsg('Undone');
+}
+function doMerge(a, b, path){
+  undoStack.push(snapshot()); if(undoStack.length>200) undoStack.shift();
+  const v = grid[a[1]][a[0]];
+  grid[a[1]][a[0]] = 0;
+  const full = [...path, b];
+  const steps = full.length-1;
+  mover = {v, k:kind[a[1]][a[0]], path:full, b, t0:performance.now(), dur:Math.max(200, steps*70), x:a[0], y:a[1]};
+  sel=null; targets=new Map();
+}
+// 新築予定地 (柵で囲って BUILD_MS 後に建物が出来る)
+const sites = new Map();
+const siteKey = (x,y) => y*N+x;
+function startSite(k){
+  const empt=[];
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++)
+    if(!grid[y][x] && terrain[y][x]===LAND && !sites.has(siteKey(x,y))) empt.push([x,y]);
+  if(!empt.length){ boardFull=true; return false; }      // 満タン
+  const [x,y]=empt[Math.random()*empt.length|0];
+  const v = randVal();
+  sites.set(siteKey(x,y), {x,y,k,v,t0:performance.now()});
+  return true;
+}
+function checkGameOver(){
+  if(sites.size) return;
+  if(boardFull){ over=true; setMsg('Board is full. Game over - undo or start a new game.'); }
+  else if(!anyMove()){ over=true; setMsg('Game over - no moves left. Undo or start a new game.'); }
+}
+function updateSites(now){
+  for(const [key,st] of sites){
+    if(now-st.t0<BUILD_MS) continue;
+    sites.delete(key);
+    grid[st.y][st.x]=st.v; kind[st.y][st.x]=st.k;
+    anims.set(key,{t:now,type:'spawn'});
+    hud(); checkGameOver();
+  }
+}
+function finishMove(){
+  const {v,k,b} = mover; mover=null;
+  const nv = v*2;
+  grid[b[1]][b[0]] = nv; kind[b[1]][b[0]] = k;
+  anims.set(b[1]*N+b[0], {t:performance.now(), type:'merge'});
+  effects.push({x:b[0], y:b[1], t:performance.now(), txt:'+'+pointsFor(nv).toLocaleString('en-US')});
+  const pts=pointsFor(nv);
+  turns++; score += pts; stats.pts[k]+=pts; stats.merges[k][tierOf(nv)]++;
+  // 大きな建物を作ったら、低いレベルの駒をすべて消して盤面に余裕を作る
+  let cleared=0;
+  if(nv >= CLEAR_VALUE){
+    const clearMax = nv/32;                  // 消える駒の最大の数字 (32→1, 64→2, 128→4, 256→8, 512→16)
+    for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(grid[y][x] && grid[y][x]<=clearMax){
+      grid[y][x]=0; cleared++; effects.push({x,y,t:performance.now(),txt:''});
+    }
+  }
+  const nSites = nv >= BIG_VALUE ? 2 : 1;
+  for(let i=0;i<nSites;i++) startSite(randKind());   // 新築の種類は、直前に合体した種類とは無関係にランダム(住宅・商業・自然が同じ確率)
+  hud();
+  setMsg(`${KINDS[k].name}: ${nameOf(k,nv)}  +${pts.toLocaleString('en-US')}` + (cleared ? `  - cleared ${cleared} small pieces` : ''));
+  checkGameOver();
+}
+
+// ================= 描画 =================
+const proj = (x,y) => [(x-y)*TW/2, (x+y)*TH/2];
+const center = (x,y) => proj(x+.5, y+.5);
+function shade(hex,f){
+  const n=parseInt(hex.slice(1),16);
+  const r=(n>>16&255)*f|0, g=(n>>8&255)*f|0, b=(n&255)*f|0;
+  return `rgb(${r},${g},${b})`;
+}
+function poly(pts, fill, stroke, lw){
+  ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+  ctx.closePath();
+  if(fill){ ctx.fillStyle=fill; ctx.fill(); }
+  if(stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=lw||1; ctx.stroke(); }
+}
+function diamond(x,y,k){
+  const [cx,cy]=center(x,y), hw=TW/2*k, hh=TH/2*k;
+  return [[cx,cy-hh],[cx+hw,cy],[cx,cy+hh],[cx-hw,cy]];
+}
+const logv = v => Math.round(Math.log2(v));
+const heightOf = v => 10 + logv(v)*4;
+
+function blockGeom(x,y,h,lift){
+  const [cx,cy]=center(x,y), k=.84, hw=TW/2*k, hh=TH/2*k;
+  return {cx,cy,hw,hh,y0:cy-lift,y1:cy-lift-h};
+}
+const NUM_H = 18;   // 数字の高さ(マス中心の上, 全駒共通)
+function drawNum(v,k,cx,cy){
+  const s=String(v);
+  ctx.font=`900 ${s.length<=2?16:s.length==3?13:11}px sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.lineJoin='round'; ctx.lineWidth=2; ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.strokeText(s,cx,cy);
+  ctx.fillStyle=KINDS[k].numC; ctx.fillText(s,cx,cy);
+}
+function drawSprite(x,y,v,k,grow,lift,selected,im){
+  const [cx,cy]=center(x,y), sz=TW;               // 48px画像をタイル幅(64)に合わせて拡大
+  ctx.imageSmoothingEnabled=false;
+  const hgt=sz*Math.max(.02,grow);
+  ctx.drawImage(showInfo?tinted(im,k):im, cx-sz/2, cy+TH/2-lift-hgt, sz, hgt);
+  if(selected) poly(diamond(x,y,.95),null,'#ff6f00',3);
+}
+function drawBlock(x,y,v,k,h,lift,selected){
+  const im = kindImg(k,v);
+  if(im) return drawSprite(x,y,v,k,h/heightOf(v),lift,selected,im);
+  const g=blockGeom(x,y,h,lift), {cx,hw,hh,y0,y1}=g;
+  const col=KINDS[k].top;
+  // 影
+  poly(diamond(x,y,.84).map(p=>[p[0]+4,p[1]+2+lift*.3]), 'rgba(0,0,0,.18)');
+  poly([[cx-hw,y0],[cx,y0+hh],[cx,y1+hh],[cx-hw,y1]], shade(col,.82), 'rgba(0,0,0,.3)', 1);
+  poly([[cx+hw,y0],[cx,y0+hh],[cx,y1+hh],[cx+hw,y1]], shade(col,.64), 'rgba(0,0,0,.3)', 1);
+  poly([[cx,y1-hh],[cx+hw,y1],[cx,y1+hh],[cx-hw,y1]], shade(col,1.1), selected?'#ff6f00':'rgba(0,0,0,.45)', selected?3:1.2);
+  // 窓 (高いほど増える)
+  const rows=Math.min(5, Math.max(0,((h-10)/9)|0));
+  for(let r=0;r<rows;r++){
+    const yy = y0 - 9 - r*8;
+    if(yy < y1+6) break;
+    poly([[cx-hw*.7,yy+hh*.3],[cx-hw*.35,yy+hh*.5],[cx-hw*.35,yy+hh*.5-4],[cx-hw*.7,yy+hh*.3-4]],'rgba(255,255,255,.55)');
+    poly([[cx+hw*.35,yy+hh*.5],[cx+hw*.7,yy+hh*.3],[cx+hw*.7,yy+hh*.3-4],[cx+hw*.35,yy+hh*.5-4]],'rgba(255,255,255,.35)');
+  }
+}
+
+let view={s:1,tx:0,ty:0}, userView=null, fitS=1, dpr=1;
+const MAP_CENTER_WY = (N*TH-30)/2;      // 盤面(高さ込み)の縦方向の中心(ワールド座標)
+function layout(){
+  dpr=window.devicePixelRatio||1;
+  const W=innerWidth, H=innerHeight;
+  if(cv.width!==(W*dpr|0) || cv.height!==(H*dpr|0)){ cv.width=W*dpr|0; cv.height=H*dpr|0; }
+  const hudH=$('hud').offsetHeight, top=hudH+(innerWidth<640?26:34), availH=H-top-(innerWidth<640?34:24);
+  $('mapTitle').style.top=(hudH+6)+'px';
+  const bw=N*TW+40, bh=N*TH+130;
+  const s=Math.min(W/bw, availH/bh);
+  fitS=s;
+  const centered = sc => ({s:sc, tx:W/2, ty:top+availH/2-MAP_CENTER_WY*sc});
+  if(userView && userView.s<=s*1.0001){          // 盤面が全て収まるまで引いたら、中心をマップ中心へ
+    const c=centered(userView.s);
+    userView.tx+=(c.tx-userView.tx)*.2; userView.ty+=(c.ty-userView.ty)*.2;
+    if(Math.abs(c.tx-userView.tx)<.3 && Math.abs(c.ty-userView.ty)<.3){ userView.tx=c.tx; userView.ty=c.ty; }
+  }
+  view=userView||centered(s);
+}
+const ease = t => 1+2.70158*Math.pow(t-1,3)+1.70158*Math.pow(t-1,2);
+
+// ---- 道路のドット絵: Icons/road_<方向>.png (11種)。橋も同じ絵を使う ----
+// 方向は隣り合う道の向き (N=y-1, E=x+1, S=y+1, W=x-1)。行き止まりは直線の絵で代用
+const ROAD_MASKS = ['EW','NS','NE','ES','SW','NW','NES','ESW','NSW','NEW','NESW'];
+const ROAD_IMGS = {};
+for(const m of ROAD_MASKS) ROAD_IMGS[m]=Object.assign(new Image(),{src:`Icons/road_${m}.png`});
+const ROAD_BASE = '#43474d';     // アスファルト色 (下地)
+const roadLike = (x,y) => inb(x,y) && (terrain[y][x]===ROAD || terrain[y][x]===BRIDGE);
+function roadMask(x,y){
+  let m=''; for(const [d,dx,dy] of [['N',0,-1],['E',1,0],['S',0,1],['W',-1,0]]) if(roadLike(x+dx,y+dy)) m+=d;
+  if(m.length<=1) return (m==='N'||m==='S') ? 'NS' : 'EW';     // 行き止まり・単独は直線で代用
+  return m;
+}
+function drawTileImg(im,x,y,smooth){
+  const [cx,cy]=center(x,y);
+  ctx.imageSmoothingEnabled=!!smooth; ctx.imageSmoothingQuality='high';
+  ctx.drawImage(im, cx-TW/2, cy+TH/2-TW, TW, TW);
+}
+const CANAL_D = 10;       // 運河の掘り深さ(px)
+const isPit = t => t===WATER || t===BRIDGE || t===RAIL || t===STATION;   // 川・線路は同じ深さに掘り下げる
+const wet = (x,y) => inb(x,y) && isPit(terrain[y][x]);
+function faceQuad(a,b,h0,h1,fill){
+  poly([[a[0],a[1]-h0],[b[0],b[1]-h0],[b[0],b[1]-h1],[a[0],a[1]-h1]], fill, fill, 1);   // 縁も同色で塗り、マス間の隙間を消す
+}
+function drawStationCell(x,y){
+  const [cx,cy]=center(x,y), hw=TW/2, hh=TH/2, H=34;
+  const Lp=[cx-hw,cy], Bp=[cx,cy+hh], Rp=[cx+hw,cy];
+  for(const [a,b,f] of [[Lp,Bp,.9],[Bp,Rp,.74]]){
+    faceQuad(a,b,0,H,shade('#f7f5ef',f));
+    faceQuad(a,b,H*.18,H*.5,shade('#4a96e6',f));     // 窓(青)
+    faceQuad(a,b,H*.72,H*.9,shade('#ff3434',f));     // 赤い帯
+  }
+  poly([[cx,cy-H-hh],[cx+hw,cy-H],[cx,cy-H+hh],[cx-hw,cy-H]], '#ffffff', '#ffffff', 1.5);   // 屋上: 縁も同色にしてマス間の線を出さない
+}
+function drawGround(now){
+  // 運河: 盤面の枠で切り抜きつつ、少し低い位置に水面を描く
+  ctx.save();
+  poly([proj(0,0),proj(N,0),proj(N,N),proj(0,N)]); ctx.clip();
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+    const t=terrain[y][x];
+    if(!isPit(t)) continue;
+    const w=.5+.5*Math.sin(now/600+x*.9+y*.6);
+    const d=diamond(x,y,1).map(p=>[p[0],p[1]+CANAL_D]);
+    poly(d, t===RAIL ? '#4a4748' : t===STATION ? '#bdb8aa' : `rgb(${40+w*14|0},${140+w*20|0},${240+w*12|0})`);
+  }
+  // 掘り込みの壁 (奥側の2辺)
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+    if(terrain[y][x]===BRIDGE || !isPit(terrain[y][x])) continue;
+    const T=proj(x,y), R=proj(x+1,y), L=proj(x,y+1);
+    if(!wet(x,y-1)) poly([T,R,[R[0],R[1]+CANAL_D],[T[0],T[1]+CANAL_D]], '#8a7a66');
+    if(!wet(x-1,y)) poly([T,L,[L[0],L[1]+CANAL_D],[T[0],T[1]+CANAL_D]], '#6f624f');
+  }
+  ctx.restore();
+  // 陸地
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+    const t=terrain[y][x];
+    if(t===WATER || t===RAIL || t===STATION) continue;
+    if(t===BRIDGE){
+      const Lp=proj(x,y+1), Bp=proj(x+1,y+1), Rp=proj(x+1,y);
+      poly([Lp,Bp,[Bp[0],Bp[1]+6],[Lp[0],Lp[1]+6]],'#6d4c41');
+      poly([Bp,Rp,[Rp[0],Rp[1]+6],[Bp[0],Bp[1]+6]],'#4e342e');
+      const bim = ROAD_IMGS[wet(x-1,y)&&wet(x+1,y) ? 'NS' : 'EW'];   // 橋は専用テクスチャなし。普通の直線道路と同じ
+      poly(diamond(x,y,1.02), ROAD_BASE);
+      if(bim.complete && bim.naturalWidth) drawTileImg(bim,x,y,false);
+      continue;
+    }
+    let col;
+    if(t===ROAD) col=ROAD_BASE;
+    else col = showInfo ? ((x+y)&1?'#3f8a1d':'#428f1f') : ((x+y)&1?'#55b025':'#5cba29');   // ラベルOFF時は更地も明るめに
+    const rim = t===ROAD ? ROAD_IMGS[roadMask(x,y)] : null;
+    if(rim && rim.complete && rim.naturalWidth){ poly(diamond(x,y,1.02), ROAD_BASE); drawTileImg(rim,x,y,false); }   // 下地を敷いて継ぎ目を隠す(線の縁は画像側で軽く平滑化済み)
+    else poly(diamond(x,y,1), col, 'rgba(0,0,0,.08)', 1);
+  }
+  // 線路 (2本のレール。川と同じ深さ)
+  ctx.save(); ctx.translate(0,CANAL_D);
+  const isRail=(x,y)=>inb(x,y)&&(terrain[y][x]===RAIL||terrain[y][x]===STATION);
+  ctx.strokeStyle='#9a9a9a'; ctx.lineWidth=2;
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+    if(terrain[y][x]!==RAIL) continue;
+    for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
+      if(!isRail(x+dx,y+dy)) continue;
+      for(const o of [-.18,.18]){
+        const px=dy?o:0, py=dx?o:0;
+        const [x0,y0]=proj(x+.5+px,y+.5+py), [x1,y1]=proj(x+.5+dx*.5+px,y+.5+dy*.5+py);
+        ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+}
+function drawLabels(){
+  ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(const l of LABELS){
+    const [cx,cy]=proj(l.x,l.y);
+    ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.65)'; ctx.strokeText(l.txt,cx,cy);
+    ctx.fillStyle='#fff'; ctx.fillText(l.txt,cx,cy);
+  }
+}
+
+// ---- 工事中 (Icons/construction.png。読み込めない時は柵を描画) ----
+const CONSTRUCTION_IMG = Object.assign(new Image(), {src:'Icons/construction.png'});
+// ---- 工事中の柵 ----
+function drawSite(st,now){
+  const {x,y}=st, H=10, m=.06;
+  if(CONSTRUCTION_IMG.complete && CONSTRUCTION_IMG.naturalWidth){
+    const [cx,cy]=center(x,y);
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(showInfo?tinted(CONSTRUCTION_IMG,st.k):CONSTRUCTION_IMG, cx-TW/2, cy+TH/2-TW, TW, TW);
+    return;
+  }
+  const P=(u,v,z)=>{ const [a,b]=proj(x+u,y+v); return [a,b-z]; };
+  poly(diamond(x,y,1), '#c8a66e', 'rgba(0,0,0,.2)', 1);                 // 地面(土)
+  const edges=[ [[m,m],[1-m,m]], [[m,m],[m,1-m]], [[1-m,m],[1-m,1-m]], [[m,1-m],[1-m,1-m]] ]; // 奥2辺→手前2辺
+  for(const [[u0,v0],[u1,v1]] of edges){
+    const n=6;
+    for(let i=0;i<n;i++){
+      const a=i/n, b=(i+1)/n;
+      const ua=u0+(u1-u0)*a, va=v0+(v1-v0)*a, ub=u0+(u1-u0)*b, vb=v0+(v1-v0)*b;
+      poly([P(ua,va,0),P(ub,vb,0),P(ub,vb,H),P(ua,va,H)], i&1?'#fafafa':'#ff8f00', 'rgba(0,0,0,.4)', 1);
+    }
+    poly([P(u0,v0,H),P(u1,v1,H),P(u1,v1,H+1.5),P(u0,v0,H+1.5)], '#5d4037');   // 上の横木
+  }
+}
+
+// ---- 車 ----
+const CAR_SPEED=.9;   // 全車共通の速さ(マス/秒)
+const CAR_COUNT=10;
+const CAR_COLORS=['#e53935','#fdd835','#1e88e5','#f5f5f5','#43a047','#ff7043','#37474f','#8e24aa'];
+const isRoadCell=(x,y)=>inb(x,y)&&(terrain[y][x]===ROAD||terrain[y][x]===BRIDGE);
+const cars=[];
+function pickNext(c){
+  const opts=DIRS.filter(([dx,dy])=>isRoadCell(c.tx+dx,c.ty+dy) && !(dx===-c.dx&&dy===-c.dy));
+  if(!opts.length) return [-c.dx,-c.dy];
+  const straight=opts.find(([dx,dy])=>dx===c.dx&&dy===c.dy);
+  if(straight && Math.random()<.7) return straight;
+  return opts[Math.random()*opts.length|0];
+}
+function initCars(n){
+  const roads=[];
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(isRoadCell(x,y)) roads.push([x,y]);
+  shuffle(roads);
+  for(let i=0;i<n && i<roads.length;i++){
+    const [x,y]=roads[i];
+    const d=DIRS.filter(([dx,dy])=>isRoadCell(x+dx,y+dy));
+    if(!d.length) continue;
+    const [dx,dy]=d[Math.random()*d.length|0];
+    cars.push({gx:x,gy:y,tx:x+dx,ty:y+dy,dx,dy,t:Math.random(),sp:CAR_SPEED,
+      ox:0,oy:0,col:CAR_COLORS[Math.random()*CAR_COLORS.length|0]});
+  }
+}
+function updateCars(dt){
+  for(const c of cars){
+    c.t+=c.sp*dt;
+    while(c.t>=1){
+      c.t-=1; c.gx=c.tx; c.gy=c.ty;
+      const [dx,dy]=pickNext(c); c.dx=dx; c.dy=dy; c.tx=c.gx+dx; c.ty=c.gy+dy;
+    }
+    // 左側通行: 進行方向の左へ寄せる (なめらかに追従)
+    const k=Math.min(1,dt*8);
+    c.ox+=(c.dy*.2-c.ox)*k; c.oy+=(-c.dx*.2-c.oy)*k;
+  }
+}
+function boxC(xa,xb,ya,yb,z0,z1,col,topCol){
+  const P=(x,y,z)=>{const [a,b]=proj(x,y); return [a,b-z];};
+  poly([P(xa,yb,z0),P(xb,yb,z0),P(xb,yb,z1),P(xa,yb,z1)], shade(col,.86));     // 左面
+  poly([P(xb,yb,z0),P(xb,ya,z0),P(xb,ya,z1),P(xb,yb,z1)], shade(col,.7));     // 右面
+  poly([P(xa,ya,z1),P(xb,ya,z1),P(xb,yb,z1),P(xa,yb,z1)], topCol||shade(col,1.12));   // 上面は一番明るく(真上からの光)
+}
+function drawCar(c){
+  const px=c.gx+(c.tx-c.gx)*c.t+c.ox+.5, py=c.gy+(c.ty-c.gy)*c.t+c.oy+.5;
+  const horiz=c.dx!==0, L=.2, W=.1;
+  const r=(l,w)=>horiz?[px-l,px+l,py-w,py+w]:[px-w,px+w,py-l,py+l];
+  // タイヤ: 奥側 → 車体 → 手前側 の順に描く
+  const wheel=(l,side)=>{
+    const wx=horiz?px+l:px+side, wy=horiz?py+side:py+l, a=.05, t=.025;
+    boxC(wx-(horiz?a:t),wx+(horiz?a:t),wy-(horiz?t:a),wy+(horiz?t:a),0,3.5,'#1b1b1b');
+  };
+  for(const l of [-.12,.12]) wheel(l,-(W+.005));
+  boxC(...r(L,W),1.5,5.5,c.col);
+  boxC(...r(L*.5,W*.85),5.5,9,'#cfe3f1');
+  for(const l of [-.12,.12]) wheel(l,W+.005);
+}
+
+// ---- 電車 (京急: 赤い車体に白帯。線路 x=19 を往復し、駅の中を通り抜ける) ----
+const TRAIN_X = (MAPDEF.train ? MAPDEF.train.x : 0) + .5, TRAIN_CARS = 4, TRAIN_SPEED = 3.5;
+const TRAIN_WAIT = 85;      // 次に走るまでの待ち時間(秒)。走行4.6秒に対し約5%の時間だけ見える
+const train = {sc:0, dir:1, wait:8};
+function updateTrain(dt){
+  if(train.wait>0){ train.wait-=dt; return; }
+  train.sc += train.dir*TRAIN_SPEED*dt;
+  if((train.dir>0 && train.sc>=N) || (train.dir<0 && train.sc<=0)){ train.dir*=-1; train.wait=TRAIN_WAIT; }
+}
+function trainItems(items){
+  if(!MAPDEF.train) return;
+  const a=Math.max(0,Math.min(1,train.sc/3,(N-train.sc)/3));
+  if(a<=0) return;
+  for(let i=0;i<TRAIN_CARS;i++){
+    const yc=train.sc+(i-(TRAIN_CARS-1)/2)*1.0;
+    // 駅のマス(x=19)より先に描いて、駅の建物で隠す(=駅に入る)
+    items.push({x:TRAIN_X,y:yc,d:Math.floor(TRAIN_X)+Math.floor(yc-.46)-.5,tr:{yc,a}});
+  }
+}
+function drawTrainCar(t){
+  ctx.save(); ctx.globalAlpha=t.a; ctx.translate(0,CANAL_D);   // 線路は掘り下げてあるので電車も下げる
+  const P=(x,y,z)=>{const [px,py]=proj(x,y); return [px,py-z];};
+  const xa=TRAIN_X-.14, xb=TRAIN_X+.14, ya=t.yc-.46, yb=t.yc+.46;
+  boxC(xa,xb,ya,yb,0,12,'#e60012','#f4f4f4');
+  poly([P(xb,yb,3.5),P(xb,ya,3.5),P(xb,ya,5.5),P(xb,yb,5.5)], '#f2f2f2');   // 白い帯
+  poly([P(xa,yb,3.5),P(xb,yb,3.5),P(xb,yb,5.5),P(xa,yb,5.5)], '#d0d0d0');
+  for(let j=0;j<4;j++){                                                       // 窓
+    const y0=ya+.07+j*.2, y1=y0+.14;
+    poly([P(xb,y1,7),P(xb,y0,7),P(xb,y0,10),P(xb,y1,10)], '#22344a');
+  }
+  ctx.restore();
+}
+
+function frame(now){
+  const dt=Math.min(.05,(now-(frame.last||now))/1000); frame.last=now;
+  updateCars(dt); updateSites(now); updateTrain(dt);
+  layout();
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.setTransform(dpr*view.s,0,0,dpr*view.s,dpr*view.tx,dpr*view.ty);
+
+  // 盤の厚み
+  const L=proj(0,N), B=proj(N,N), R=proj(N,0);
+  poly([L,B,[B[0],B[1]+22],[L[0],L[1]+22]],'#5d4037');
+  poly([R,B,[B[0],B[1]+22],[R[0],R[1]+22]],'#3e2723');
+  // 地面
+  drawGround(now);
+
+  const hv = preview || hover;      // タッチは preview、マウスは hover
+  // 移動可能先ハイライト
+  const pulse=.5+.5*Math.sin(now/200);
+  if(sel){
+    poly(diamond(sel[0],sel[1],1), 'rgba(255,111,0,.35)', '#ff6f00', 2.5);
+    // 接続先の候補は、ホバーするまで反応させない(ホバー中の1マスだけ光らせる)
+    if(hv && targets.has(hv[1]*N+hv[0]))
+      poly(diamond(hv[0],hv[1],1), `rgba(255,255,100,${.25+.25*pulse})`, '#fff176', 3);
+  }
+  // 経路プレビュー
+  let hoverPath=null;
+  if(sel && hv){ const k=hv[1]*N+hv[0]; if(targets.has(k)) hoverPath=[...targets.get(k),hv]; }
+
+  // 駒
+  const items=[], nums=[];
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(grid[y][x]) items.push({x,y,d:x+y,v:grid[y][x],k:kind[y][x]});
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(terrain[y][x]===STATION) items.push({x,y,d:x+y,st:1});
+  if(mover) items.push({x:mover.x,y:mover.y,d:mover.x+mover.y+.4,v:mover.v,k:mover.k,mv:1});
+  for(const st of sites.values()) items.push({x:st.x,y:st.y,d:st.x+st.y,site:st});
+  for(const c of cars){
+    const px=c.gx+(c.tx-c.gx)*c.t+c.ox, py=c.gy+(c.ty-c.gy)*c.t+c.oy;
+    items.push({x:px,y:py,d:px+py+.3,car:c});
+  }
+  trainItems(items);
+  items.sort((a,b)=>a.d-b.d||a.x-b.x);
+  for(const it of items){
+    if(it.st){ drawStationCell(it.x,it.y); continue; }
+    if(it.car){ drawCar(it.car); continue; }
+    if(it.tr){ drawTrainCar(it.tr); continue; }
+    if(it.site){ drawSite(it.site,now); continue; }
+    let h=heightOf(it.v), lift=0, selected=false;
+    if(it.mv){ lift=8; }
+    else {
+      const key=it.y*N+it.x, an=anims.get(key);
+      if(an){
+        const t=(now-an.t)/(an.type==='spawn'?350:420);
+        if(t<0) continue;
+        if(t>=1) anims.delete(key);
+        else if(an.type==='spawn') h*=Math.max(.01,ease(t));
+        else lift=Math.sin(t*Math.PI)*14;
+      }
+      if(sel && sel[0]===it.x && sel[1]===it.y){ lift+=6+2*Math.sin(now/150); selected=true; }
+      else if(hv && hv[0]===it.x && hv[1]===it.y && !mover && !preview) lift+=3;
+    }
+    drawBlock(it.x,it.y,it.v,it.k,h,lift,selected);
+    const [ncx,ncy]=center(it.x,it.y);
+    if(h/heightOf(it.v)>.6) nums.push([it.v,it.k,ncx,ncy-NUM_H]);
+  }
+  if(showInfo) for(const n of nums) drawNum(n[0],n[1],n[2],n[3]);
+  if(hoverPath){
+    ctx.beginPath();
+    hoverPath.forEach((p,i)=>{ const [cx,cy]=center(p[0],p[1]); i?ctx.lineTo(cx,cy):ctx.moveTo(cx,cy); });
+    ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.lineWidth=5; ctx.stroke();      // 経路プレビュー(動かない実線)
+  }
+  drawLabels();
+  // エフェクト
+  effects=effects.filter(e=>now-e.t<900);
+  for(const e of effects){
+    const t=(now-e.t)/900, [cx,cy]=center(e.x,e.y);
+    poly(diamond(e.x,e.y,1+t*1.5),null,`rgba(255,255,255,${1-t})`,3);
+    ctx.font='bold 20px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle=`rgba(255,255,255,${1-t})`; ctx.strokeStyle=`rgba(0,0,0,${.6*(1-t)})`; ctx.lineWidth=3;
+    ctx.strokeText(e.txt,cx,cy-heightOf(8)-20-t*30); ctx.fillText(e.txt,cx,cy-heightOf(8)-20-t*30);
+  }
+  // 移動アニメ更新
+  if(mover){
+    const t=Math.min(1,(now-mover.t0)/mover.dur), steps=mover.path.length-1;
+    const f=t*steps, i=Math.min(steps-1,f|0), u=f-i;
+    const p=mover.path[i], q=mover.path[i+1];
+    mover.x=p[0]+(q[0]-p[0])*u; mover.y=p[1]+(q[1]-p[1])*u;
+    if(t>=1) finishMove();
+  }
+  if(over){
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect(0,0,innerWidth,innerHeight);
+    ctx.font='bold 40px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#fff'; ctx.fillText('Game Over', innerWidth/2, innerHeight/2-22);
+    ctx.font='bold 22px sans-serif'; ctx.fillText('Score '+score.toLocaleString('en-US')+'   (Undo or New Game)', innerWidth/2, innerHeight/2+22);
+  }
+  requestAnimationFrame(frame);
+}
+
+// ================= 入力 =================
+function ptInPoly(px,py,pts){
+  let c=false;
+  for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+    const [xi,yi]=pts[i],[xj,yj]=pts[j];
+    if((yi>py)!==(yj>py) && px<(xj-xi)*(py-yi)/(yj-yi)+xi) c=!c;
+  }
+  return c;
+}
+function pick(ev){
+  const r=cv.getBoundingClientRect();
+  const wx=(ev.clientX-r.left-view.tx)/view.s, wy=(ev.clientY-r.top-view.ty)/view.s;
+  // 判定は地面の高さのひし形だけ。建物が上に伸びていても、その絵の上にカーソルがあるかは関係しない
+  const X=Math.floor((wy/16+wx/32)/2), Y=Math.floor((wy/16-wx/32)/2);
+  return inb(X,Y)?[X,Y]:null;
+}
+function zoomAt(cx,cy,f){
+  const v=userView||{...view};
+  const ns=Math.min(fitS*8,Math.max(fitS*.5,v.s*f));
+  const wx=(cx-v.tx)/v.s, wy=(cy-v.ty)/v.s;
+  userView={s:ns,tx:cx-wx*ns,ty:cy-wy*ns};
+}
+function panBy(dx,dy){
+  const v=userView||{...view};
+  userView={s:v.s,tx:v.tx+dx,ty:v.ty+dy};
+}
+function deselect(){ sel=null; targets=new Map(); preview=null; }
+function clickAt(e){
+  if(mover||over) return;
+  const c=pick(e); if(!c) return;
+  const [x,y]=c, k=y*N+x, touch=e.pointerType!=='mouse';
+  if(!grid[y][x]) return;                          // 地面のタップでは選択を解除しない
+  if(!sel){
+    sel=[x,y]; targets=targetsOf(x,y); preview=null;      // 接続先がなくても選択はできる
+    if(!targets.size) setMsg('No piece can connect to this one right now');
+    return;
+  }
+  if(sel[0]===x && sel[1]===y){ deselect(); return; }   // 選択中の駒をもう一度 = キャンセル
+  if(targets.has(k)){
+    if(touch && !(preview && preview[0]===x && preview[1]===y)){   // タッチ: 1回目は経路プレビュー
+      preview=[x,y]; setMsg('Tap again to merge'); return;
+    }
+    const path=targets.get(k); preview=null; doMerge(sel,[x,y],path); return;
+  }
+  preview=null;                                    // 接続先でない駒: 選択は保ったまま知らせる
+  setMsg('Not a match. Tap the selected piece to cancel, or pick a matching one.');
+}
+const ptrs=new Map(); let press=null;
+cv.addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX,e.clientY,Math.exp(-e.deltaY*.0015)); }, {passive:false});
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1) press={x:e.clientX,y:e.clientY,moved:false};
+  else if(press) press.moved=true;
+});
+cv.addEventListener('pointermove', e => {
+  const p=ptrs.get(e.pointerId);
+  if(!p){ if(e.pointerType==='mouse') hover=pick(e); return; }
+  if(ptrs.size===2){
+    const o=[...ptrs.entries()].find(([id])=>id!==e.pointerId)[1];
+    const d0=Math.hypot(p.x-o.x,p.y-o.y);
+    const m0=[(p.x+o.x)/2,(p.y+o.y)/2];
+    p.x=e.clientX; p.y=e.clientY;
+    const d1=Math.hypot(p.x-o.x,p.y-o.y), m1=[(p.x+o.x)/2,(p.y+o.y)/2];
+    panBy(m1[0]-m0[0],m1[1]-m0[1]);
+    if(d0>0) zoomAt(m1[0],m1[1],d1/d0);
+    return;
+  }
+  const dx=e.clientX-p.x, dy=e.clientY-p.y;
+  p.x=e.clientX; p.y=e.clientY;
+  if(press && !press.moved && Math.hypot(e.clientX-press.x,e.clientY-press.y)>6) press.moved=true;
+  if(press && press.moved){ panBy(dx,dy); hover=null; }
+  else if(e.pointerType==='mouse') hover=pick(e);
+});
+function endPtr(e,click){
+  if(!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  if(click && press && !press.moved && ptrs.size===0){
+    if(e.button===2) deselect();                       // 右クリック = キャンセル
+    else if(e.button===0) clickAt(e);                  // 左クリック・タッチ・ペンのみ選択
+  }
+  if(ptrs.size===0) press=null;
+}
+cv.addEventListener('pointerup', e => endPtr(e,true));
+cv.addEventListener('pointercancel', e => endPtr(e,false));
+cv.addEventListener('pointerleave', () => { hover=null; });
+$('undoBtn').onclick = undo;
+$('scoreBox').onclick = showBreakdown;
+$('panelClose').onclick = () => { $('panel').style.display='none'; };
+$('panel').onclick = e => { if(e.target===$('panel')) $('panel').style.display='none'; };
+addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); } else if(e.key==='Escape'){ $('panel').style.display='none'; deselect(); } });
+$('infoBtn').onclick = () => { showInfo=!showInfo; $('infoBtn').textContent='Labels: '+(showInfo?'ON':'OFF'); };
+$('viewBtn').onclick = () => { userView=null; };
+$('newBtn').onclick = newGame;
+$('hintBtn').onclick = () => {
+  if(mover||over) return;
+  const m=anyMove(); if(!m) return;
+  sel=m; targets=targetsOf(m[0],m[1]); preview=null;
+};
+
+$('mapTitle').textContent = MAPDEF.title;
+function placeTitle(){ $('mapTitle').style.top = ($('hud').offsetHeight+6)+'px'; }
+addEventListener('resize', placeTitle); placeTitle();
+newGame();
+initCars(CAR_COUNT);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
