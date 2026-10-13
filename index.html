@@ -12,17 +12,24 @@
   canvas{position:fixed;left:0;top:0;width:100%;height:100%;touch-action:none}
   #hud{position:fixed;left:0;right:0;top:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;
     padding:8px 14px;padding-top:max(8px,env(safe-area-inset-top));
-    background:rgba(10,20,26,.6);backdrop-filter:blur(4px);font-size:18px}
-  #hud b{font-size:22px;margin-left:8px}
-  #scoreBox b{font-size:44px;line-height:1;margin-left:10px;letter-spacing:.01em;text-shadow:0 2px 6px rgba(0,0,0,.45)}
+    background:rgba(10,20,26,.6);backdrop-filter:blur(4px);font-size:24px}
+  #hud b{font-size:32px;margin-left:10px}
+  #scoreBox b,#levelBox b{font-size:60px;line-height:1;margin-left:10px;letter-spacing:.01em;text-shadow:0 2px 6px rgba(0,0,0,.45)}
   #hud .sp{flex:1}
-  #hud .btns{display:flex;gap:6px;flex-wrap:wrap}
-  button{background:#4caf50;color:#fff;border:0;border-radius:6px;padding:10px 16px;font-size:17px;cursor:pointer;min-height:44px;touch-action:manipulation}
+  #hud .btns{display:flex;gap:8px;flex-wrap:wrap}
+  button{background:#4caf50;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-size:24px;cursor:pointer;min-height:40px;touch-action:manipulation}
   button.sub{background:#546e7a}
   button:hover{filter:brightness(1.12)}
   #scoreBox{cursor:pointer;border-bottom:1px dotted #9db;} #scoreBox small{margin-left:3px;opacity:.7}
+  button.toggle.on{background:#2e9d6a} button.toggle:not(.on){background:#3d4b55;opacity:.75}
+  #menuPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:6}
+  #menuBox{background:#1d2c35;border-radius:12px;padding:24px 28px;min-width:340px;display:flex;flex-direction:column;gap:16px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+  #menuBox{max-height:92vh;overflow:auto}
+  #menuBox h3{margin:0 0 6px;font-size:44px}
+  #help{font-size:17px;line-height:1.55;max-width:560px} #help h4{margin:4px 0 6px;font-size:22px} #help ul{margin:0;padding-left:1.2em} #help li{margin-bottom:6px}
+  #menuBox button{font-size:30px;padding:16px 24px;min-height:68px;border-radius:10px}
   button:disabled{opacity:.35;cursor:default;filter:none}
-  #undoBtn{background:#f9a825;color:#222;font-weight:700}
+  #passBtn.alert{background:#e65100;box-shadow:0 0 0 3px rgba(255,160,60,.55)}
   #panel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:5}
   #panelBox{background:#1d2c35;border-radius:10px;padding:14px 18px;max-width:92vw;max-height:88vh;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.5)}
   #panelBox h3{margin:0 0 10px;font-size:32px}
@@ -32,15 +39,15 @@
   #panelBox i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
   #panelBox p{margin:8px 0;font-size:14px;opacity:.75}
   #panelBox button{margin-top:6px;width:100%}
-  #mapTitle{position:fixed;left:14px;font-size:30px;font-weight:700;letter-spacing:.03em;pointer-events:none;
+  #mapTitle{position:fixed;left:14px;font-size:40px;font-weight:700;letter-spacing:.03em;pointer-events:none;
     color:#fff;text-shadow:0 1px 4px rgba(10,30,50,.6)}
   #msg{position:fixed;left:10px;right:10px;bottom:max(10px,env(safe-area-inset-bottom));text-align:center;
     font-size:17px;color:#eaf3f8;pointer-events:none;text-shadow:0 1px 3px rgba(10,30,50,.6)}
   @media (max-width:640px){
-    #hud{gap:4px 12px;font-size:14px} #hud b{font-size:18px;margin-left:4px}
-    #scoreBox b{font-size:34px}
-    button{padding:8px 11px;font-size:14px;min-height:40px}
-    #mapTitle{font-size:22px} #msg{font-size:13px}
+    #hud{gap:4px 12px;font-size:18px} #hud b{font-size:24px;margin-left:6px}
+    #scoreBox b,#levelBox b{font-size:46px}
+    button{padding:5px 9px;font-size:18px;min-height:36px}
+    #mapTitle{font-size:28px} #msg{font-size:13px}
     #panelBox h3{font-size:26px} #panelBox table{font-size:15px}
   }
 </style>
@@ -51,17 +58,28 @@
   <div id="scoreBox" title="Tap for breakdown">Score<b id="score">0</b><small>&#9662;</small></div>
   <div>Turn<b id="turns">0</b></div>
   <div>Filled<b id="fill">0%</b></div>
-  <div>Pieces<b id="count">0</b></div>
   <div class="sp"></div>
+  <div id="levelBox">Level<b id="level">1</b></div>
   <div class="btns">
-  <button id="undoBtn">Undo</button>
-  <button class="sub" id="infoBtn">Labels: ON</button>
-  <button class="sub" id="viewBtn">Reset View</button>
-  <button class="sub" id="hintBtn">Hint</button>
-  <button id="newBtn">New Game</button>
+  <button class="sub" id="undoBtn">Undo (+1)</button>
+  <button class="sub" id="hintBtn">Hint (+2)</button>
+  <button class="sub" id="passBtn">Pass (+4)</button>
+  <button class="sub toggle on" id="infoBtn">Labels</button>
+  <button class="sub" id="menuBtn">Menu</button>
   </div>
 </div>
 <div id="panel"><div id="panelBox"><div id="panelBody"></div><button id="panelClose">Close</button></div></div>
+<div id="menuPanel"><div id="menuBox"><h3>Menu</h3><button id="newBtn">New Game</button>
+  <div id="help"><h4>遊び方</h4><ul>
+    <li>同じ種類・同じ数字の建物をつなぐと、1つ上のレベルになります。</li>
+    <li>建物を選んで、つなぎたい相手を選びます。道をたどって、曲がるのは1回までで相手の隣に着ければつながります。</li>
+    <li>選び直すときは、地面や盤の外をクリック、右クリック、Esc。スマホは、相手を1回タップで確認、もう一度タップで決定です。</li>
+    <li>つなぐたびに新築が増えます（数字8以上を作ると2件）。種類はランダムです。</li>
+    <li>数字32を作ると数字1の建物が、64を作ると数字2以下が……と、小さな建物が消えます。</li>
+    <li>つなげる組み合わせがなくなったら Pass。Undo・Hint・Pass は、ボタンの数字の分だけ新築が増えます。</li>
+    <li>更地がなくなるとゲームオーバー。スコアをタップすると内訳が見られます。</li>
+  </ul></div>
+  <button class="sub" id="menuClose">Close</button></div></div>
 <div id="mapTitle"></div>
 <div id="msg"></div>
 
@@ -74,21 +92,19 @@
 const MAPS = {
   yokohama: {
     title: 'Yokohama Station',
-    train: {x:12},                 // 電車が走る線路の列 (無ければ null)
+    train: {y:0},                  // 電車が走る線路 ({x:列} なら縦に、{y:行} なら横に走る。無ければ null)
     rows: [
-  'rrrrrrrrrrrrr',
-  'r.r........rR',
-  'rWrWWWWWW..rR',
-  'rrrrrrrrrrrrR',
-  'r..r....Wr.rR',
-  'r..r....Wr.rS',
-  'rrrrrrrrrrrrS',
-  'r..r...rWr.rS',
-  'r..r...rWr.rR',
-  'rrrrrrrrWrrrR',
-  'r......rW...R',
-  'rrrrrrrrW...R',
-  'rWWWWWWWWWWWR'
+  'rRRSSSSRRRR',
+  'rrrr..r...W',
+  'r..rrrrrrrW',
+  'r.WrWWrWWWW',
+  'r.Wr..rrrrW',
+  'r.Wr..r..rW',
+  'r.Wr..r..rW',
+  'r.WrrrrrrrW',
+  'rrrr..r..rW',
+  'r.Wr..r..rW',
+  'rrrrrrrrrrr'
 ]
   },
   // bayside:   { title:'Bayside',    train:null, rows:[ ... ] },
@@ -102,6 +118,10 @@ const INIT_RATE = 0.4;        // 初期の建物の割合(中央寄りに配置)
 // 新築のルール: レベル4以上(数字8以上)を作ったら新築2件、レベル3以下は1件。新築できる更地がなくなったらゲームオーバー
 // 長く遊べる仕組み: 大きな建物を作ると、盤面の低いレベルの駒がすべて消える
 //   レベル6(数字32) → レベル1(数字1) / 64 → レベル2以下(2以下) / 128 → レベル3以下(4以下) / 256 → レベル4以下(8以下) / 512 → レベル5以下(16以下) ... (数字/32 以下)
+// パスとヒントのペナルティ(新築の追加件数)
+const PASS_SITES = 4;
+const HINT_SITES = 2;
+const UNDO_SITES = 1;
 const BIG_VALUE = 8;
 const CLEAR_VALUE = 32;
 const LV_PROB = [.45,.35,.20]; // 新築が1,2,3段階目になる確率       // 初期配置率
@@ -133,12 +153,16 @@ const DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
 
 // ================= 状態 =================
 let grid, kind, stats, score, sel, targets, mover, effects, anims, hover, over;
+let bestValue = 1;       // ゲーム中に作った最大の建物の数字
 let turns = 0;           // 合体した回数
+let stuck = false;       // 合体できる組み合わせがない(パスできる)
 let boardFull = false;  // 新築を置く更地がなくなった(= ゲームオーバー待ち)
 let preview = null;     // タッチ操作で「1回タップした接続先」(もう一度タップで合体)
 const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
 const $ = id => document.getElementById(id);
 
+// 最初の配置は数字1か2だけ(1:2 の割合は新築の確率に合わせる)
+function randInit(){ return Math.random() < LV_PROB[0]/(LV_PROB[0]+LV_PROB[1]) ? 1 : 2; }
 function randVal(){                    // 1,2,3段階目 = 数字 1,2,4
   const r=Math.random();
   return r<LV_PROB[0] ? 1 : r<LV_PROB[0]+LV_PROB[1] ? 2 : 4;
@@ -184,10 +208,11 @@ function newGame(){
   cells.sort((a,b)=>a.d-b.d);
   const n = Math.round(cells.length*INIT_RATE);
   const kinds=Array.from({length:n},(_,i)=>i%KINDS.length); shuffle(kinds);   // 最初の種類の比率は均等(1個以内の差)
-  for(let i=0;i<n;i++){ const [x,y]=cells[i]; grid[y][x]=randVal(); kind[y][x]=kinds[i]; anims.set(y*N+x,{t:performance.now()+i*4,type:'spawn'}); }
-  sites.clear(); undoStack.length=0; score=0; turns=0; stats=newStats(); sel=null; targets=new Map(); preview=null; mover=null; effects=[]; hover=null; over=false; boardFull=false;
-  setMsg('Select a piece, then click a matching one (same type & number) to merge. Touch: tap the match once to preview, again to merge. Right-click / Esc / tap the piece again to cancel.');
-  hud();
+  for(let i=0;i<n;i++){ const [x,y]=cells[i]; grid[y][x]=randInit(); kind[y][x]=kinds[i]; anims.set(y*N+x,{t:performance.now()+i*4,type:'spawn'}); }
+  sites.clear(); undoStack.length=0; score=0; turns=0; bestValue=1; stats=newStats(); sel=null; targets=new Map(); preview=null; mover=null; effects=[]; hover=null; over=false; boardFull=false; stuck=false;
+  bestValue = Math.max(1, ...grid.flat());   // 最初の盤面の最大の数字(1か2)
+  setMsg('');
+  hud(); checkGameOver();
 }
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.random()*(i+1)|0; [a[i],a[j]]=[a[j],a[i]]; } }
 function setMsg(s){ $('msg').textContent = s; }
@@ -195,11 +220,12 @@ function hud(){
   let cnt=0;
   for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(grid[y][x]) cnt++;
   $('score').textContent = score.toLocaleString('en-US');
-  $('count').textContent = cnt;
+  $('level').textContent = Math.max(1, Math.round(Math.log2(bestValue)));   // 作った最高の建物のレベル-1 (最初はレベル1から)
   $('turns').textContent = turns;
   const landTotal = terrain.flat().filter(t=>t===LAND).length;      // 建物を置ける更地の数
   $('fill').textContent = Math.round((cnt+sites.size)/landTotal*100)+'%';   // 駒 + 工事中の更地
   $('undoBtn').disabled = !undoStack.length || !!mover;
+  $('passBtn').classList.toggle('alert', stuck && !over);
 }
 anims = new Map();
 
@@ -266,16 +292,17 @@ function showBreakdown(){
 // ---- Undo ----
 const undoStack = [];
 function snapshot(){
-  return {grid:grid.map(r=>r.slice()), kind:kind.map(r=>r.slice()), score, turns, stats:JSON.parse(JSON.stringify(stats)),
+  return {grid:grid.map(r=>r.slice()), kind:kind.map(r=>r.slice()), score, turns, bestValue, stats:JSON.parse(JSON.stringify(stats)),
     sites:[...sites.values()].map(({x,y,k,v})=>({x,y,k,v}))};
 }
 function undo(){
   if(mover || !undoStack.length) return;
   const h=undoStack.pop(), now=performance.now();
-  grid=h.grid; kind=h.kind; score=h.score; turns=h.turns; stats=h.stats;
+  grid=h.grid; kind=h.kind; score=h.score; turns=h.turns; bestValue=h.bestValue; stats=h.stats;
   sites.clear(); for(const st of h.sites) sites.set(siteKey(st.x,st.y),{...st,t0:now});
-  anims.clear(); effects=[]; over=false; boardFull=false; sel=null; targets=new Map(); preview=null;
-  hud(); setMsg('Undone');
+  anims.clear(); effects=[]; over=false; boardFull=false; stuck=false; sel=null; targets=new Map(); preview=null;
+  penalty(UNDO_SITES);                              // Undoのペナルティ
+  hud(); setMsg(`Undone: +${UNDO_SITES} new building`); checkGameOver();
 }
 function doMerge(a, b, path){
   undoStack.push(snapshot()); if(undoStack.length>200) undoStack.shift();
@@ -300,9 +327,11 @@ function startSite(k){
   return true;
 }
 function checkGameOver(){
-  if(sites.size) return;
-  if(boardFull){ over=true; setMsg('Board is full. Game over - undo or start a new game.'); }
-  else if(!anyMove()){ over=true; setMsg('Game over - no moves left. Undo or start a new game.'); }
+  if(sites.size) return;                           // 工事中は判定を待つ
+  if(boardFull){ over=true; stuck=false; setMsg('Board is full. Game over - undo or start a new game.'); }
+  else if(!anyMove()){ stuck=true; setMsg(`No moves left. Press Pass to continue (+${PASS_SITES} new buildings).`); }   // 詰み = ゲームオーバーではなくパスできる
+  else stuck=false;
+  hud();
 }
 function updateSites(now){
   for(const [key,st] of sites){
@@ -320,7 +349,7 @@ function finishMove(){
   anims.set(b[1]*N+b[0], {t:performance.now(), type:'merge'});
   effects.push({x:b[0], y:b[1], t:performance.now(), txt:'+'+pointsFor(nv).toLocaleString('en-US')});
   const pts=pointsFor(nv);
-  turns++; score += pts; stats.pts[k]+=pts; stats.merges[k][tierOf(nv)]++;
+  turns++; bestValue=Math.max(bestValue,nv); score += pts; stats.pts[k]+=pts; stats.merges[k][tierOf(nv)]++;
   // 大きな建物を作ったら、低いレベルの駒をすべて消して盤面に余裕を作る
   let cleared=0;
   if(nv >= CLEAR_VALUE){
@@ -398,15 +427,16 @@ function drawBlock(x,y,v,k,h,lift,selected){
 }
 
 let view={s:1,tx:0,ty:0}, userView=null, fitS=1, dpr=1;
-const MAP_CENTER_WY = (N*TH-30)/2;      // 盤面(高さ込み)の縦方向の中心(ワールド座標)
+const MAP_CENTER_WY = (N*TH-28)/2;      // 盤面(高さ込み: 上-50 ～ 下+22)の縦方向の中心(ワールド座標)
 function layout(){
   dpr=window.devicePixelRatio||1;
   const W=innerWidth, H=innerHeight;
   if(cv.width!==(W*dpr|0) || cv.height!==(H*dpr|0)){ cv.width=W*dpr|0; cv.height=H*dpr|0; }
-  const hudH=$('hud').offsetHeight, top=hudH+(innerWidth<640?26:34), availH=H-top-(innerWidth<640?34:24);
+  const hudH=$('hud').offsetHeight, top=hudH+2, availH=H-top-(innerWidth<640?26:22);
   $('mapTitle').style.top=(hudH+6)+'px';
-  const bw=N*TW+40, bh=N*TH+130;
-  const s=Math.min(W/bw, availH/bh);
+  const bw=N*TW+8, bh=N*TH+72;                    // 余白を最小限にして、盤面をできるだけ大きく表示
+  const portrait = W < H;                         // スマホの縦画面: 盤面の幅を画面の1.1倍にして、左右を5%ずつはみ出させる
+  const s = portrait ? W*1.1/bw : Math.min(W/bw, availH/bh);
   fitS=s;
   const centered = sc => ({s:sc, tx:W/2, ty:top+availH/2-MAP_CENTER_WY*sc});
   if(userView && userView.s<=s*1.0001){          // 盤面が全て収まるまで引いたら、中心をマップ中心へ
@@ -430,6 +460,12 @@ function roadMask(x,y){
   if(m.length<=1) return (m==='N'||m==='S') ? 'NS' : 'EW';     // 行き止まり・単独は直線で代用
   return m;
 }
+// 道路のマス: 縁が規則正しいドットの階段(2:1の直線)になっている画像をそのまま描く。
+// 下地はちょうどのひし形を敷いて、階段の凹みや継ぎ目の隙間(背景が透ける)を隠す
+function drawRoadTile(im,x,y){
+  poly(diamond(x,y,1), ROAD_BASE);
+  if(im && im.complete && im.naturalWidth) drawTileImg(im,x,y,false);
+}
 function drawTileImg(im,x,y,smooth){
   const [cx,cy]=center(x,y);
   ctx.imageSmoothingEnabled=!!smooth; ctx.imageSmoothingQuality='high';
@@ -442,19 +478,18 @@ function faceQuad(a,b,h0,h1,fill){
   poly([[a[0],a[1]-h0],[b[0],b[1]-h0],[b[0],b[1]-h1],[a[0],a[1]-h1]], fill, fill, 1);   // 縁も同色で塗り、マス間の隙間を消す
 }
 function drawStationCell(x,y){
-  const [cx,cy]=center(x,y), hw=TW/2, hh=TH/2, H=34;
+  const [cx,cy]=center(x,y), hw=TW/2, hh=TH/2, H=19;   // 駅ビルの高さ
   const Lp=[cx-hw,cy], Bp=[cx,cy+hh], Rp=[cx+hw,cy];
   for(const [a,b,f] of [[Lp,Bp,.9],[Bp,Rp,.74]]){
-    faceQuad(a,b,0,H,shade('#f7f5ef',f));
+    faceQuad(a,b,0,H,shade('#efe7d3',f));
     faceQuad(a,b,H*.18,H*.5,shade('#4a96e6',f));     // 窓(青)
     faceQuad(a,b,H*.72,H*.9,shade('#ff3434',f));     // 赤い帯
   }
-  poly([[cx,cy-H-hh],[cx+hw,cy-H],[cx,cy-H+hh],[cx-hw,cy-H]], '#ffffff', '#ffffff', 1.5);   // 屋上: 縁も同色にしてマス間の線を出さない
+  poly([[cx,cy-H-hh],[cx+hw,cy-H],[cx,cy-H+hh],[cx-hw,cy-H]], '#f7f1e2', '#f7f1e2', 1.5);   // 屋上: 縁も同色にしてマス間の線を出さない
 }
 function drawGround(now){
-  // 運河: 盤面の枠で切り抜きつつ、少し低い位置に水面を描く
+  // 運河・線路: 少し低い位置に水面・線路の面を描く(切り抜かない = 手前の縁では面が縁の外へはみ出し、断面の上につながる)
   ctx.save();
-  poly([proj(0,0),proj(N,0),proj(N,N),proj(0,N)]); ctx.clip();
   for(let y=0;y<N;y++) for(let x=0;x<N;x++){
     const t=terrain[y][x];
     if(!isPit(t)) continue;
@@ -466,10 +501,23 @@ function drawGround(now){
   for(let y=0;y<N;y++) for(let x=0;x<N;x++){
     if(terrain[y][x]===BRIDGE || !isPit(terrain[y][x])) continue;
     const T=proj(x,y), R=proj(x+1,y), L=proj(x,y+1);
-    if(!wet(x,y-1)) poly([T,R,[R[0],R[1]+CANAL_D],[T[0],T[1]+CANAL_D]], '#8a7a66');
-    if(!wet(x-1,y)) poly([T,L,[L[0],L[1]+CANAL_D],[T[0],T[1]+CANAL_D]], '#6f624f');
+    if(inb(x,y-1) && !wet(x,y-1)) poly([T,R,[R[0],R[1]+CANAL_D],[T[0],T[1]+CANAL_D]], '#8a7a66');
+    if(inb(x-1,y) && !wet(x-1,y)) poly([T,L,[L[0],L[1]+CANAL_D],[T[0],T[1]+CANAL_D]], '#6f624f');
   }
   ctx.restore();
+  // 手前2辺の側面(断面)。掘り下げた水面・線路の面がはみ出す部分より後に描いて、道路などの地面の断面が欠けないようにする。
+  //   運河・線路のマスは、掘り下げた高さ(CANAL_D)から下を水・線路の色で描く
+  //   (その上の部分は、掘り下げた水面・線路の面そのものが盤面の縁からはみ出して見える)
+  const sectionCol = t => t===WATER ? '#2a8ff5' : t===RAIL ? '#4a4748' : t===STATION ? '#bdb8aa' : null;
+  for(let i=0;i<N;i++){
+    for(const [edge,t] of [[0,terrain[N-1][i]],[1,terrain[i][N-1]]]){
+      const c=sectionCol(t), f=edge?.7:.86;
+      const p=edge?proj(N,i):proj(i,N), q=edge?proj(N,i+1):proj(i+1,N);
+      const quad=(z0,z1,fill)=>poly([[p[0],p[1]+z0],[q[0],q[1]+z0],[q[0],q[1]+z1],[p[0],p[1]+z1]], fill, fill, 1);
+      if(c) quad(CANAL_D,22,shade(c,f));           // 水面・線路の面は描画側(下の drawGround)に任せ、断面は掘り下げた高さから下だけ
+      else quad(0,22, edge?'#3e2723':'#5d4037');
+    }
+  }
   // 陸地
   for(let y=0;y<N;y++) for(let x=0;x<N;x++){
     const t=terrain[y][x];
@@ -478,17 +526,12 @@ function drawGround(now){
       const Lp=proj(x,y+1), Bp=proj(x+1,y+1), Rp=proj(x+1,y);
       poly([Lp,Bp,[Bp[0],Bp[1]+6],[Lp[0],Lp[1]+6]],'#6d4c41');
       poly([Bp,Rp,[Rp[0],Rp[1]+6],[Bp[0],Bp[1]+6]],'#4e342e');
-      const bim = ROAD_IMGS[wet(x-1,y)&&wet(x+1,y) ? 'NS' : 'EW'];   // 橋は専用テクスチャなし。普通の直線道路と同じ
-      poly(diamond(x,y,1.02), ROAD_BASE);
-      if(bim.complete && bim.naturalWidth) drawTileImg(bim,x,y,false);
-      continue;
+      continue;                                   // 橋の路面は、下の「道路を最後に描く」でほかの道路と同じに描く
     }
+    if(t===ROAD) continue;                        // 道路は、更地を描いたあとにまとめて描く
     let col;
-    if(t===ROAD) col=ROAD_BASE;
-    else col = showInfo ? ((x+y)&1?'#3f8a1d':'#428f1f') : ((x+y)&1?'#55b025':'#5cba29');   // ラベルOFF時は更地も明るめに
-    const rim = t===ROAD ? ROAD_IMGS[roadMask(x,y)] : null;
-    if(rim && rim.complete && rim.naturalWidth){ poly(diamond(x,y,1.02), ROAD_BASE); drawTileImg(rim,x,y,false); }   // 下地を敷いて継ぎ目を隠す(線の縁は画像側で軽く平滑化済み)
-    else poly(diamond(x,y,1), col, 'rgba(0,0,0,.08)', 1);
+    col = showInfo ? ((x+y)&1?'#3f8a1d':'#428f1f') : ((x+y)&1?'#55b025':'#5cba29');   // ラベルOFF時は更地も明るめに
+    poly(diamond(x,y,1), col, 'rgba(0,0,0,.08)', 1);
   }
   // 線路 (2本のレール。川と同じ深さ)
   ctx.save(); ctx.translate(0,CANAL_D);
@@ -505,7 +548,27 @@ function drawGround(now){
       }
     }
   }
+  // 盤面の外へ続く線路 (電車が盤面の外から外へ走るため、両端に数マス分の線路を描く)
+  if(MAPDEF.train){
+    const lc=Math.floor(TRAIN_L);
+    for(const c of [-3,-2,-1,N,N+1,N+2]){
+      const x=TRAIN_COL?lc:c, y=TRAIN_COL?c:lc;
+      poly(diamond(x,y,1), '#4a4748');
+      ctx.strokeStyle='#9a9a9a'; ctx.lineWidth=2;
+      for(const o of [-.18,.18]){
+        const [x0,y0]=TRAIN_COL?proj(x+.5+o,y):proj(x,y+.5+o), [x1,y1]=TRAIN_COL?proj(x+.5+o,y+1):proj(x+1,y+.5+o);
+        ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+      }
+    }
+  }
   ctx.restore();
+  // 道路は、線路(と盤面の外の線路)よりも常に手前に描く
+  // 道路を最後に描く: 道路のドット絵の縁(規則正しい階段)が、隣の更地の上に重なって、隙間なく同じ見え方になる
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+    const t=terrain[y][x];
+    if(t===ROAD) drawRoadTile(ROAD_IMGS[roadMask(x,y)],x,y);
+    else if(t===BRIDGE) drawRoadTile(ROAD_IMGS[wet(x-1,y)&&wet(x+1,y) ? 'NS' : 'EW'],x,y);   // 橋は専用テクスチャなし。普通の直線道路と同じ
+  }
 }
 function drawLabels(){
   ctx.font='bold 14px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -600,35 +663,57 @@ function drawCar(c){
   for(const l of [-.12,.12]) wheel(l,W+.005);
 }
 
-// ---- 電車 (京急: 赤い車体に白帯。線路 x=19 を往復し、駅の中を通り抜ける) ----
-const TRAIN_X = (MAPDEF.train ? MAPDEF.train.x : 0) + .5, TRAIN_CARS = 4, TRAIN_SPEED = 3.5;
+// ---- 電車 (京急: 赤い車体に白帯。線路を往復し、駅の中を通り抜ける。縦({x:列})・横({y:行})どちらの線路にも対応) ----
+const TRAIN_COL = !!(MAPDEF.train && MAPDEF.train.x !== undefined);       // true: 縦(y方向)に走る
+const TRAIN_L = (MAPDEF.train ? (TRAIN_COL ? MAPDEF.train.x : MAPDEF.train.y) : 0) + .5;   // 線路の位置
+const TRAIN_CARS = 4, TRAIN_SPEED = 3.5;
 const TRAIN_WAIT = 85;      // 次に走るまでの待ち時間(秒)。走行4.6秒に対し約5%の時間だけ見える
-const train = {sc:0, dir:1, wait:8};
+const TRAIN_START = -3, TRAIN_END = N+3;     // 盤面の外から外へ(編成が完全に外に出る位置)
+const train = {sc:TRAIN_START, dir:1, wait:8};
 function updateTrain(dt){
   if(train.wait>0){ train.wait-=dt; return; }
   train.sc += train.dir*TRAIN_SPEED*dt;
-  if((train.dir>0 && train.sc>=N) || (train.dir<0 && train.sc<=0)){ train.dir*=-1; train.wait=TRAIN_WAIT; }
+  if((train.dir>0 && train.sc>=TRAIN_END) || (train.dir<0 && train.sc<=TRAIN_START)){ train.dir*=-1; train.wait=TRAIN_WAIT; }
 }
 function trainItems(items){
   if(!MAPDEF.train) return;
-  const a=Math.max(0,Math.min(1,train.sc/3,(N-train.sc)/3));
-  if(a<=0) return;
+  const a=1;                                          // フェードせず、盤面の外から外へそのまま走る
   for(let i=0;i<TRAIN_CARS;i++){
-    const yc=train.sc+(i-(TRAIN_CARS-1)/2)*1.0;
-    // 駅のマス(x=19)より先に描いて、駅の建物で隠す(=駅に入る)
-    items.push({x:TRAIN_X,y:yc,d:Math.floor(TRAIN_X)+Math.floor(yc-.46)-.5,tr:{yc,a}});
+    const ac=train.sc+(i-(TRAIN_CARS-1)/2)*1.0;      // 線路に沿った位置
+    // 駅のマスより先に描いて、駅の建物で隠す(=駅に入る)
+    items.push({x:TRAIN_COL?TRAIN_L:ac, y:TRAIN_COL?ac:TRAIN_L, d:Math.floor(TRAIN_L)+Math.floor(ac-.46)-.5, tr:{ac,a}});
   }
+}
+// 線路が道路の下を通るマス: 電車を描いたあとに道路を描き直して、電車を隠す(=道路の下をくぐる)
+function trainCoverItems(items){
+  if(!MAPDEF.train) return;
+  const lc=Math.floor(TRAIN_L);
+  for(let c=0;c<N;c++){
+    const x=TRAIN_COL?lc:c, y=TRAIN_COL?c:lc, t=terrain[y][x];
+    if(t===ROAD || t===BRIDGE) items.push({x,y,d:x+y,cover:1});
+  }
+}
+function drawRoadCover(x,y){
+  const t=terrain[y][x];
+  const im = t===BRIDGE ? ROAD_IMGS[wet(x-1,y)&&wet(x+1,y) ? 'NS' : 'EW'] : ROAD_IMGS[roadMask(x,y)];
+  drawRoadTile(im,x,y);
 }
 function drawTrainCar(t){
   ctx.save(); ctx.globalAlpha=t.a; ctx.translate(0,CANAL_D);   // 線路は掘り下げてあるので電車も下げる
   const P=(x,y,z)=>{const [px,py]=proj(x,y); return [px,py-z];};
-  const xa=TRAIN_X-.14, xb=TRAIN_X+.14, ya=t.yc-.46, yb=t.yc+.46;
+  const xa = TRAIN_COL ? TRAIN_L-.14 : t.ac-.46, xb = TRAIN_COL ? TRAIN_L+.14 : t.ac+.46;
+  const ya = TRAIN_COL ? t.ac-.46 : TRAIN_L-.14, yb = TRAIN_COL ? t.ac+.46 : TRAIN_L+.14;
   boxC(xa,xb,ya,yb,0,12,'#e60012','#f4f4f4');
-  poly([P(xb,yb,3.5),P(xb,ya,3.5),P(xb,ya,5.5),P(xb,yb,5.5)], '#f2f2f2');   // 白い帯
-  poly([P(xa,yb,3.5),P(xb,yb,3.5),P(xb,yb,5.5),P(xa,yb,5.5)], '#d0d0d0');
-  for(let j=0;j<4;j++){                                                       // 窓
-    const y0=ya+.07+j*.2, y1=y0+.14;
-    poly([P(xb,y1,7),P(xb,y0,7),P(xb,y0,10),P(xb,y1,10)], '#22344a');
+  // 見える2面: 面A(y=yb, x方向に伸びる) / 面B(x=xb, y方向に伸びる)。長い側面に帯と窓を描く
+  const faceA=(t0,t1,z0,z1,c)=>poly([P(t0,yb,z0),P(t1,yb,z0),P(t1,yb,z1),P(t0,yb,z1)], c);
+  const faceB=(t0,t1,z0,z1,c)=>poly([P(xb,t0,z0),P(xb,t1,z0),P(xb,t1,z1),P(xb,t0,z1)], c);
+  const long = TRAIN_COL ? faceB : faceA, end = TRAIN_COL ? faceA : faceB;
+  const [l0,l1] = TRAIN_COL ? [ya,yb] : [xa,xb], [e0,e1] = TRAIN_COL ? [xa,xb] : [ya,yb];
+  const cLong = TRAIN_COL ? '#e6e6e6' : '#fafafa', cEnd = TRAIN_COL ? '#fafafa' : '#e6e6e6';
+  long(l0,l1,3.5,5.5,cLong); end(e0,e1,3.5,5.5,cEnd);                    // 白い帯
+  for(let j=0;j<4;j++){                                                 // 窓
+    const w0=l0+.07+j*.2, w1=w0+.14;
+    long(w0,w1,7,10,'#22344a');
   }
   ctx.restore();
 }
@@ -641,9 +726,6 @@ function frame(now){
   ctx.setTransform(dpr*view.s,0,0,dpr*view.s,dpr*view.tx,dpr*view.ty);
 
   // 盤の厚み
-  const L=proj(0,N), B=proj(N,N), R=proj(N,0);
-  poly([L,B,[B[0],B[1]+22],[L[0],L[1]+22]],'#5d4037');
-  poly([R,B,[B[0],B[1]+22],[R[0],R[1]+22]],'#3e2723');
   // 地面
   drawGround(now);
 
@@ -670,12 +752,13 @@ function frame(now){
     const px=c.gx+(c.tx-c.gx)*c.t+c.ox, py=c.gy+(c.ty-c.gy)*c.t+c.oy;
     items.push({x:px,y:py,d:px+py+.3,car:c});
   }
-  trainItems(items);
+  trainItems(items); trainCoverItems(items);
   items.sort((a,b)=>a.d-b.d||a.x-b.x);
   for(const it of items){
     if(it.st){ drawStationCell(it.x,it.y); continue; }
     if(it.car){ drawCar(it.car); continue; }
     if(it.tr){ drawTrainCar(it.tr); continue; }
+    if(it.cover){ drawRoadCover(it.x,it.y); continue; }
     if(it.site){ drawSite(it.site,now); continue; }
     let h=heightOf(it.v), lift=0, selected=false;
     if(it.mv){ lift=8; }
@@ -759,9 +842,10 @@ function panBy(dx,dy){
 function deselect(){ sel=null; targets=new Map(); preview=null; }
 function clickAt(e){
   if(mover||over) return;
-  const c=pick(e); if(!c) return;
+  const c=pick(e);
+  if(!c || !grid[c[1]][c[0]]){ if(sel) deselect(); return; }      // 建物以外(地面・道・盤面の外)を押したら選択をキャンセル
   const [x,y]=c, k=y*N+x, touch=e.pointerType!=='mouse';
-  if(!grid[y][x]) return;                          // 地面のタップでは選択を解除しない
+  if(!touch) preview=null;
   if(!sel){
     sel=[x,y]; targets=targetsOf(x,y); preview=null;      // 接続先がなくても選択はできる
     if(!targets.size) setMsg('No piece can connect to this one right now');
@@ -821,15 +905,36 @@ $('undoBtn').onclick = undo;
 $('scoreBox').onclick = showBreakdown;
 $('panelClose').onclick = () => { $('panel').style.display='none'; };
 $('panel').onclick = e => { if(e.target===$('panel')) $('panel').style.display='none'; };
-addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); } else if(e.key==='Escape'){ $('panel').style.display='none'; deselect(); } });
-$('infoBtn').onclick = () => { showInfo=!showInfo; $('infoBtn').textContent='Labels: '+(showInfo?'ON':'OFF'); };
-$('viewBtn').onclick = () => { userView=null; };
-$('newBtn').onclick = newGame;
+addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); } else if(e.key==='Escape'){ $('panel').style.display='none'; closeMenu(); deselect(); } });
+$('infoBtn').onclick = () => { showInfo=!showInfo; $('infoBtn').classList.toggle('on', showInfo); };    // ON/OFFはボタンの色だけで表す
+$('undoBtn').textContent = `Undo (+${UNDO_SITES})`;
+$('passBtn').textContent = `Pass (+${PASS_SITES})`;
+$('hintBtn').textContent = `Hint (+${HINT_SITES})`;
+const closeMenu = () => { $('menuPanel').style.display='none'; };
+$('menuBtn').onclick = () => { $('menuPanel').style.display='flex'; };
+$('menuClose').onclick = closeMenu;
+$('menuPanel').onclick = e => { if(e.target===$('menuPanel')) closeMenu(); };
+$('newBtn').onclick = () => { closeMenu(); newGame(); };
+function penalty(n){ for(let i=0;i<n;i++) startSite(randKind()); }
+function doPass(){
+  if(mover||over) return;
+  undoStack.push(snapshot()); if(undoStack.length>200) undoStack.shift();
+  deselect(); turns++; stuck=false;
+  penalty(PASS_SITES);
+  hud(); setMsg(`Passed: +${PASS_SITES} new buildings`);
+  checkGameOver();
+}
+$('passBtn').onclick = doPass;
 $('hintBtn').onclick = () => {
   if(mover||over) return;
-  const m=anyMove(); if(!m) return;
-  sel=m; targets=targetsOf(m[0],m[1]); preview=null;
+  if(!anyMove()){ setMsg('No moves available. Use Pass.'); return; }
+  penalty(HINT_SITES);                             // ヒントのペナルティ
+  const m=anyMove()||null; if(!m){ hud(); return; }
+  sel=m; targets=targetsOf(m[0],m[1]);
+  const first=[...targets.keys()][0]; preview=[first%N, first/N|0];   // 駒と、つなぐ相手を表示
+  hud(); setMsg(`Hint: +${HINT_SITES} new buildings`);
 };
+
 
 $('mapTitle').textContent = MAPDEF.title;
 function placeTitle(){ $('mapTitle').style.top = ($('hud').offsetHeight+6)+'px'; }
