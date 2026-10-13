@@ -8,7 +8,7 @@
   html,body{margin:0;height:100%;overflow:hidden;color:#fff;overscroll-behavior:none;
     font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
-    background:linear-gradient(180deg,#b0d6ee 0%,#82bbdd 50%,#6cb6d4 100%);}   /* ハーバーブルー: 空から海へのグラデーション */
+    background:linear-gradient(180deg,#addbfb 0%,#8eccf6 50%,#7dc3f2 100%);}   /* ハーバーブルー: 空から海へのグラデーション */
   canvas{position:fixed;left:0;top:0;width:100%;height:100%;touch-action:none}
   #hud{position:fixed;left:0;right:0;top:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;
     padding:8px 14px;padding-top:max(8px,env(safe-area-inset-top));
@@ -74,8 +74,7 @@
     <li>同じ種類・同じ数字の建物をつなぐと、1つ上のレベルになります。</li>
     <li>建物を選んで、つなぎたい相手を選びます。道をたどって、曲がるのは1回までで相手の隣に着ければつながります。</li>
     <li>選び直すときは、地面や盤の外をクリック、右クリック、Esc。スマホは、相手を1回タップで確認、もう一度タップで決定です。</li>
-    <li>つなぐたびに新築が増えます（数字8以上を作ると2件）。種類はランダムです。</li>
-    <li>数字32を作ると数字1の建物が、64を作ると数字2以下が……と、小さな建物が消えます。</li>
+    <li>1つつなぐごとに新築が1件増えます（建物の数は変わりません）。種類はランダムです。</li>
     <li>つなげる組み合わせがなくなったら Pass。Undo・Hint・Pass は、ボタンの数字の分だけ新築が増えます。</li>
     <li>更地がなくなるとゲームオーバー。スコアをタップすると内訳が見られます。</li>
   </ul></div>
@@ -114,16 +113,12 @@ const MAPID = new URLSearchParams(location.search).get('map');
 const MAPDEF = MAPS[MAPID] || MAPS.yokohama;
 const N = MAPDEF.rows.length;  // 盤面サイズ (N x N)
 const TW = 64, TH = 32;       // タイル幅/高さ (2:1 のアイソメトリック)
-const INIT_RATE = 0.4;        // 初期の建物の割合(中央寄りに配置)
-// 新築のルール: レベル4以上(数字8以上)を作ったら新築2件、レベル3以下は1件。新築できる更地がなくなったらゲームオーバー
-// 長く遊べる仕組み: 大きな建物を作ると、盤面の低いレベルの駒がすべて消える
-//   レベル6(数字32) → レベル1(数字1) / 64 → レベル2以下(2以下) / 128 → レベル3以下(4以下) / 256 → レベル4以下(8以下) / 512 → レベル5以下(16以下) ... (数字/32 以下)
+const INIT_RATE = 0.5;        // 初期の建物の割合(中央寄りに配置)
+// 新築のルール: 合体で駒が1つ消えるたびに、新築を1件(= 駒の数は変わらない)。新築できる更地がなくなったらゲームオーバー
 // パスとヒントのペナルティ(新築の追加件数)
 const PASS_SITES = 4;
 const HINT_SITES = 2;
 const UNDO_SITES = 1;
-const BIG_VALUE = 8;
-const CLEAR_VALUE = 32;
 const LV_PROB = [.45,.35,.20]; // 新築が1,2,3段階目になる確率       // 初期配置率
 const BUILD_MS = 1000;        // 新築の工事時間(柵で囲う)
 // 駒の種類 (同じ種類・同じ数字だけ合体できる)
@@ -172,7 +167,9 @@ const ICON_IMGS = {};
 for(const kd of KINDS) if(kd.icon) ICON_IMGS[kd.icon]=Array.from({length:11}, (_,i) => { const im=new Image(); im.src=`Icons/${kd.icon}${String(i+1).padStart(2,'0')}.png`; return im; });
 let showInfo = true;     // 数字と種類色の表示ON/OFF
 const tintCache = new Map();
+const USE_TINT = false;                // 種類ごとの色(青・赤・緑)を建物の画像に重ねるか。今はオフ(true で復活)
 function tinted(im,k){                 // 画像に種類の色を重ねたものを作る
+  if(!USE_TINT) return im;
   const key=im.src+'|'+k; let c=tintCache.get(key);
   if(c) return c;
   const kd=KINDS[k], W=im.naturalWidth, H=im.naturalHeight;
@@ -350,18 +347,9 @@ function finishMove(){
   effects.push({x:b[0], y:b[1], t:performance.now(), txt:'+'+pointsFor(nv).toLocaleString('en-US')});
   const pts=pointsFor(nv);
   turns++; bestValue=Math.max(bestValue,nv); score += pts; stats.pts[k]+=pts; stats.merges[k][tierOf(nv)]++;
-  // 大きな建物を作ったら、低いレベルの駒をすべて消して盤面に余裕を作る
-  let cleared=0;
-  if(nv >= CLEAR_VALUE){
-    const clearMax = nv/32;                  // 消える駒の最大の数字 (32→1, 64→2, 128→4, 256→8, 512→16)
-    for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(grid[y][x] && grid[y][x]<=clearMax){
-      grid[y][x]=0; cleared++; effects.push({x,y,t:performance.now(),txt:''});
-    }
-  }
-  const nSites = nv >= BIG_VALUE ? 2 : 1;
-  for(let i=0;i<nSites;i++) startSite(randKind());   // 新築の種類は、直前に合体した種類とは無関係にランダム(住宅・商業・自然が同じ確率)
+  startSite(randKind());   // 新築は1件。種類は、直前に合体した種類とは無関係にランダム(住宅・商業・自然が同じ確率)
   hud();
-  setMsg(`${KINDS[k].name}: ${nameOf(k,nv)}  +${pts.toLocaleString('en-US')}` + (cleared ? `  - cleared ${cleared} small pieces` : ''));
+  setMsg(`${KINDS[k].name}: ${nameOf(k,nv)}  +${pts.toLocaleString('en-US')}` );
   checkGameOver();
 }
 
@@ -394,9 +382,9 @@ function blockGeom(x,y,h,lift){
 const NUM_H = 18;   // 数字の高さ(マス中心の上, 全駒共通)
 function drawNum(v,k,cx,cy){
   const s=String(v);
-  ctx.font=`900 ${s.length<=2?16:s.length==3?13:11}px sans-serif`;
+  ctx.font=`900 ${s.length<=2?24:s.length==3?20:17}px sans-serif`;
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.lineJoin='round'; ctx.lineWidth=2; ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.strokeText(s,cx,cy);
+  ctx.lineJoin='round'; ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.strokeText(s,cx,cy);
   ctx.fillStyle=KINDS[k].numC; ctx.fillText(s,cx,cy);
 }
 function drawSprite(x,y,v,k,grow,lift,selected,im){
@@ -453,7 +441,7 @@ const ease = t => 1+2.70158*Math.pow(t-1,3)+1.70158*Math.pow(t-1,2);
 const ROAD_MASKS = ['EW','NS','NE','ES','SW','NW','NES','ESW','NSW','NEW','NESW'];
 const ROAD_IMGS = {};
 for(const m of ROAD_MASKS) ROAD_IMGS[m]=Object.assign(new Image(),{src:`Icons/road_${m}.png`});
-const ROAD_BASE = '#43474d';     // アスファルト色 (下地)
+const ROAD_BASE = '#3a3e44';     // アスファルト色 (下地)
 const roadLike = (x,y) => inb(x,y) && (terrain[y][x]===ROAD || terrain[y][x]===BRIDGE);
 function roadMask(x,y){
   let m=''; for(const [d,dx,dy] of [['N',0,-1],['E',1,0],['S',0,1],['W',-1,0]]) if(roadLike(x+dx,y+dy)) m+=d;
@@ -544,19 +532,6 @@ function drawGround(now){
       for(const o of [-.18,.18]){
         const px=dy?o:0, py=dx?o:0;
         const [x0,y0]=proj(x+.5+px,y+.5+py), [x1,y1]=proj(x+.5+dx*.5+px,y+.5+dy*.5+py);
-        ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
-      }
-    }
-  }
-  // 盤面の外へ続く線路 (電車が盤面の外から外へ走るため、両端に数マス分の線路を描く)
-  if(MAPDEF.train){
-    const lc=Math.floor(TRAIN_L);
-    for(const c of [-3,-2,-1,N,N+1,N+2]){
-      const x=TRAIN_COL?lc:c, y=TRAIN_COL?c:lc;
-      poly(diamond(x,y,1), '#4a4748');
-      ctx.strokeStyle='#9a9a9a'; ctx.lineWidth=2;
-      for(const o of [-.18,.18]){
-        const [x0,y0]=TRAIN_COL?proj(x+.5+o,y):proj(x,y+.5+o), [x1,y1]=TRAIN_COL?proj(x+.5+o,y+1):proj(x+1,y+.5+o);
         ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
       }
     }
@@ -668,7 +643,7 @@ const TRAIN_COL = !!(MAPDEF.train && MAPDEF.train.x !== undefined);       // tru
 const TRAIN_L = (MAPDEF.train ? (TRAIN_COL ? MAPDEF.train.x : MAPDEF.train.y) : 0) + .5;   // 線路の位置
 const TRAIN_CARS = 4, TRAIN_SPEED = 3.5;
 const TRAIN_WAIT = 85;      // 次に走るまでの待ち時間(秒)。走行4.6秒に対し約5%の時間だけ見える
-const TRAIN_START = -3, TRAIN_END = N+3;     // 盤面の外から外へ(編成が完全に外に出る位置)
+const TRAIN_START = 0, TRAIN_END = N;           // 線路の両端(盤面の中)
 const train = {sc:TRAIN_START, dir:1, wait:8};
 function updateTrain(dt){
   if(train.wait>0){ train.wait-=dt; return; }
@@ -677,7 +652,8 @@ function updateTrain(dt){
 }
 function trainItems(items){
   if(!MAPDEF.train) return;
-  const a=1;                                          // フェードせず、盤面の外から外へそのまま走る
+  const a=Math.max(0,Math.min(1,(train.sc-TRAIN_START)/3,(TRAIN_END-train.sc)/3));   // 線路の両端でフェードイン・アウト
+  if(a<=0) return;
   for(let i=0;i<TRAIN_CARS;i++){
     const ac=train.sc+(i-(TRAIN_CARS-1)/2)*1.0;      // 線路に沿った位置
     // 駅のマスより先に描いて、駅の建物で隠す(=駅に入る)
