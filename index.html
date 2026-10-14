@@ -29,7 +29,9 @@
   #help{font-size:17px;line-height:1.55;max-width:560px} #help h4{margin:4px 0 6px;font-size:22px} #help ul{margin:0;padding-left:1.2em} #help li{margin-bottom:6px}
   #menuBox button{font-size:30px;padding:16px 24px;min-height:68px;border-radius:10px}
   button:disabled{opacity:.35;cursor:default;filter:none}
-  #passBtn.alert{background:#e65100;box-shadow:0 0 0 3px rgba(255,160,60,.55)}
+  #passBtn.alert{background:#e65100;animation:passGlow 2.4s ease-in-out infinite}
+  @keyframes passGlow{0%,100%{filter:brightness(.85);box-shadow:0 0 0 0 rgba(255,160,60,0)}50%{filter:brightness(1.25);box-shadow:0 0 14px 5px rgba(255,160,60,.6)}}
+  #hintOk{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(44px,calc(env(safe-area-inset-bottom) + 34px));display:none;z-index:4;padding:12px 32px;font-size:30px;min-height:56px;box-shadow:0 3px 10px rgba(0,0,0,.45)}
   #panel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:5}
   #panelBox{background:#1d2c35;border-radius:10px;padding:14px 18px;max-width:92vw;max-height:88vh;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.5)}
   #panelBox h3{margin:0 0 10px;font-size:32px}
@@ -70,7 +72,9 @@
 </div>
 <div id="panel"><div id="panelBox"><div id="panelBody"></div><button id="panelClose">Close</button></div></div>
 <div id="menuPanel"><div id="menuBox"><h3>Menu</h3><button id="newBtn">New Game</button>
-  <div id="help"><h4>遊び方</h4><ul>
+  <button class="sub toggle on" id="soundBtn">Sound: ON</button>
+  <button class="sub" id="manualBtn">Manual</button>
+  <div id="help" style="display:none"><h4>遊び方</h4><ul>
     <li>同じ種類・同じ数字の建物をつなぐと、1つ上のレベルになります。</li>
     <li>建物を選んで、つなぎたい相手を選びます。道をたどって、曲がるのは1回までで相手の隣に着ければつながります。</li>
     <li>選び直すときは、地面や盤の外をクリック、右クリック、Esc。スマホは、相手を1回タップで確認、もう一度タップで決定です。</li>
@@ -79,6 +83,7 @@
     <li>更地がなくなるとゲームオーバー。スコアをタップすると内訳が見られます。</li>
   </ul></div>
   <button class="sub" id="menuClose">Close</button></div></div>
+<button id="hintOk">OK</button>
 <div id="mapTitle"></div>
 <div id="msg"></div>
 
@@ -113,7 +118,7 @@ const MAPID = new URLSearchParams(location.search).get('map');
 const MAPDEF = MAPS[MAPID] || MAPS.yokohama;
 const N = MAPDEF.rows.length;  // 盤面サイズ (N x N)
 const TW = 64, TH = 32;       // タイル幅/高さ (2:1 のアイソメトリック)
-const INIT_RATE = 0.5;        // 初期の建物の割合(中央寄りに配置)
+const INIT_RATE = 0.6;        // 初期の建物の割合(中央寄りに配置)
 // 新築のルール: 合体で駒が1つ消えるたびに、新築を1件(= 駒の数は変わらない)。新築できる更地がなくなったらゲームオーバー
 // パスとヒントのペナルティ(新築の追加件数)
 const PASS_SITES = 4;
@@ -206,7 +211,7 @@ function newGame(){
   const n = Math.round(cells.length*INIT_RATE);
   const kinds=Array.from({length:n},(_,i)=>i%KINDS.length); shuffle(kinds);   // 最初の種類の比率は均等(1個以内の差)
   for(let i=0;i<n;i++){ const [x,y]=cells[i]; grid[y][x]=randInit(); kind[y][x]=kinds[i]; anims.set(y*N+x,{t:performance.now()+i*4,type:'spawn'}); }
-  sites.clear(); undoStack.length=0; score=0; turns=0; bestValue=1; stats=newStats(); sel=null; targets=new Map(); preview=null; mover=null; effects=[]; hover=null; over=false; boardFull=false; stuck=false;
+  sites.clear(); undoStack.length=0; score=0; turns=0; bestValue=1; stats=newStats(); sel=null; targets=new Map(); preview=null; hintMode=false; mover=null; effects=[]; hover=null; over=false; boardFull=false; stuck=false;
   bestValue = Math.max(1, ...grid.flat());   // 最初の盤面の最大の数字(1か2)
   setMsg('');
   hud(); checkGameOver();
@@ -221,7 +226,10 @@ function hud(){
   $('turns').textContent = turns;
   const landTotal = terrain.flat().filter(t=>t===LAND).length;      // 建物を置ける更地の数
   $('fill').textContent = Math.round((cnt+sites.size)/landTotal*100)+'%';   // 駒 + 工事中の更地
-  $('undoBtn').disabled = !undoStack.length || !!mover;
+  $('undoBtn').disabled = !undoStack.length || !!mover || hintMode;
+  $('hintBtn').disabled = (stuck && !sites.size) || over || hintMode;
+  $('passBtn').disabled = hintMode;
+  $('hintOk').style.display = hintMode ? 'block' : 'none';
   $('passBtn').classList.toggle('alert', stuck && !over);
 }
 anims = new Map();
@@ -292,8 +300,9 @@ function snapshot(){
   return {grid:grid.map(r=>r.slice()), kind:kind.map(r=>r.slice()), score, turns, bestValue, stats:JSON.parse(JSON.stringify(stats)),
     sites:[...sites.values()].map(({x,y,k,v})=>({x,y,k,v}))};
 }
+let hintMode=false;                                // Hint表示中: OKを押すまで駒の操作は不可
 function undo(){
-  if(mover || !undoStack.length) return;
+  if(mover || hintMode || !undoStack.length) return;
   const h=undoStack.pop(), now=performance.now();
   grid=h.grid; kind=h.kind; score=h.score; turns=h.turns; bestValue=h.bestValue; stats=h.stats;
   sites.clear(); for(const st of h.sites) sites.set(siteKey(st.x,st.y),{...st,t0:now});
@@ -308,6 +317,7 @@ function doMerge(a, b, path){
   const full = [...path, b];
   const steps = full.length-1;
   mover = {v, k:kind[a[1]][a[0]], path:full, b, t0:performance.now(), dur:Math.max(200, steps*70), x:a[0], y:a[1]};
+  sfxDrag(mover.dur/1000);
   sel=null; targets=new Map();
 }
 // 新築予定地 (柵で囲って BUILD_MS 後に建物が出来る)
@@ -339,14 +349,40 @@ function updateSites(now){
     hud(); checkGameOver();
   }
 }
+// 32以上を作ると、32→レベル1, 64→レベル2, 128以上→レベル3 の建物(全種類)が消えて更地になる
+function clearLow(nv){
+  const t=tierOf(nv); if(t<5) return;
+  const lv=Math.min(t-4,3), val=Math.pow(2,lv), now=performance.now();
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+    if(grid[y][x]!==val) continue;
+    effects.push({type:'pillar', x, y, t:now, lv, tint:KINDS[kind[y][x]].tint});
+    grid[y][x]=0; anims.delete(y*N+x);
+  }
+}
+// 土煙(球状の煙が膨らみながら舞い上がる)。back: 進行方向の反対へ流す角度(タイル座標)
+function puff(cx,cy,n,o={}){
+  const now=performance.now();
+  for(let i=0;i<n;i++){
+    let a=o.ring!=null ? Math.random()*Math.PI*2 : null, vx,vy;
+    if(a!=null){ vx=Math.cos(a)*o.ring; vy=Math.sin(a)*o.ring*.55; }
+    else { const dx=Math.cos(o.back), dy=Math.sin(o.back), L=.7+Math.random()*.5;   // 進行方向の逆(画面上)へ長く引きずる
+      vx=-(dx-dy)*o.sp*L; vy=-(dx+dy)*.5*o.sp*L; }
+    let ra,rb; do{ ra=Math.random()*2-1; rb=Math.random()*2-1; }while(Math.abs(ra)+Math.abs(rb)>1);   // 土地のひし形の中のどこからでも発生
+    const ox=ra*TW/2, oy=rb*TH/2;
+    effects.push({type:'dust', t:now+Math.random()*60, life:650+Math.random()*350, cx:cx+ox, cy:cy+oy,
+      vx, vy, rise:(o.rise||20)*(.6+Math.random()*.8)*(a!=null?1:.3), r:(o.r||7)*(.7+Math.random()*.7)});
+  }
+}
 function finishMove(){
   const {v,k,b} = mover; mover=null;
+  { const [bx,by]=center(b[0],b[1]); puff(bx,by,42,{ring:14,rise:3,r:16}); }   // 着地の土煙
   const nv = v*2;
   grid[b[1]][b[0]] = nv; kind[b[1]][b[0]] = k;
   anims.set(b[1]*N+b[0], {t:performance.now(), type:'merge'});
   effects.push({x:b[0], y:b[1], t:performance.now(), txt:'+'+pointsFor(nv).toLocaleString('en-US')});
   const pts=pointsFor(nv);
   turns++; bestValue=Math.max(bestValue,nv); score += pts; stats.pts[k]+=pts; stats.merges[k][tierOf(nv)]++;
+  clearLow(nv); sfxMerge(tierOf(nv));
   startSite(randKind());   // 新築は1件。種類は、直前に合体した種類とは無関係にランダム(住宅・商業・自然が同じ確率)
   hud();
   setMsg(`${KINDS[k].name}: ${nameOf(k,nv)}  +${pts.toLocaleString('en-US')}` );
@@ -644,11 +680,18 @@ const TRAIN_L = (MAPDEF.train ? (TRAIN_COL ? MAPDEF.train.x : MAPDEF.train.y) : 
 const TRAIN_CARS = 4, TRAIN_SPEED = 3.5;
 const TRAIN_WAIT = 85;      // 次に走るまでの待ち時間(秒)。走行4.6秒に対し約5%の時間だけ見える
 const TRAIN_START = 0, TRAIN_END = N;           // 線路の両端(盤面の中)
-const train = {sc:TRAIN_START, dir:1, wait:8};
+const train = {sc:TRAIN_START, dir:1, wait:8, stop:0, passed:false};
+const STATION_STOP = 3;     // 駅での停車時間(秒)
+const STATION_C = (()=>{ const v=[]; for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(terrain[y][x]===STATION) v.push(TRAIN_COL?y:x); return v.length ? (Math.min(...v)+Math.max(...v)+1)/2 : null; })();   // 駅の中央
 function updateTrain(dt){
   if(train.wait>0){ train.wait-=dt; return; }
+  if(train.stop>0){ train.stop-=dt; return; }
+  const prev=train.sc;
   train.sc += train.dir*TRAIN_SPEED*dt;
-  if((train.dir>0 && train.sc>=TRAIN_END) || (train.dir<0 && train.sc<=TRAIN_START)){ train.dir*=-1; train.wait=TRAIN_WAIT; }
+  if(STATION_C!==null && !train.passed && (prev-STATION_C)*(train.sc-STATION_C)<=0){   // 駅の中央で3秒停車
+    train.sc=STATION_C; train.stop=STATION_STOP; train.passed=true;
+  }
+  if((train.dir>0 && train.sc>=TRAIN_END) || (train.dir<0 && train.sc<=TRAIN_START)){ train.dir*=-1; train.wait=TRAIN_WAIT; train.passed=false; }
 }
 function trainItems(items){
   if(!MAPDEF.train) return;
@@ -696,7 +739,7 @@ function drawTrainCar(t){
 
 function frame(now){
   const dt=Math.min(.05,(now-(frame.last||now))/1000); frame.last=now;
-  updateCars(dt); updateSites(now); updateTrain(dt);
+  updateCars(dt); updateSites(now); updateTrain(dt); updateAmbience(now);
   layout();
   ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height);
   ctx.setTransform(dpr*view.s,0,0,dpr*view.s,dpr*view.tx,dpr*view.ty);
@@ -763,8 +806,30 @@ function frame(now){
   }
   drawLabels();
   // エフェクト
-  effects=effects.filter(e=>now-e.t<900);
+  effects=effects.filter(e=>now-e.t<(e.type==='dust'?e.life:e.type==='pillar'?1100:900));
   for(const e of effects){
+    if(e.type==='dust'){
+      const t=(now-e.t)/e.life; if(t<0) continue;
+      const u=1-Math.pow(1-t,2);          // 最初は勢いよく、だんだんゆっくり
+      const x=e.cx+e.vx*u, y=e.cy+e.vy*u-e.rise*u, rad=e.r*(.85+.35*t), al=(1-t)*.25;
+      ctx.save(); ctx.globalAlpha=al;
+      ctx.fillStyle='#9b7a55';                              // 茶色のべた塗り(立体感なし)
+      ctx.beginPath(); ctx.ellipse(x,y,rad,rad*.6,0,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      continue;
+    }
+    if(e.type==='pillar'){
+      const t=(now-e.t)/1100, [cx,cy]=center(e.x,e.y), hw=TW/2, hh=TH/2;
+      const H=(30+e.lv*34)*Math.min(1,t*3.5), a=t<.3?1:1-(t-.3)/.7;      // 上へ伸びてから薄れる
+      const g=ctx.createLinearGradient(0,cy,0,cy-H);
+      g.addColorStop(0,e.tint); g.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.save(); ctx.globalAlpha=Math.max(0,a)*.75;
+      ctx.fillStyle=g;                                   // ひし形を縦に押し出した光の柱
+      ctx.beginPath(); ctx.moveTo(cx-hw,cy); ctx.lineTo(cx,cy+hh); ctx.lineTo(cx+hw,cy); ctx.lineTo(cx+hw,cy-H); ctx.lineTo(cx,cy-hh-H); ctx.lineTo(cx-hw,cy-H); ctx.closePath(); ctx.fill();
+      poly(diamond(e.x,e.y,1),'rgba(255,255,255,.55)',e.tint,3);
+      ctx.restore();
+      continue;
+    }
     const t=(now-e.t)/900, [cx,cy]=center(e.x,e.y);
     poly(diamond(e.x,e.y,1+t*1.5),null,`rgba(255,255,255,${1-t})`,3);
     ctx.font='bold 20px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -777,6 +842,10 @@ function frame(now){
     const f=t*steps, i=Math.min(steps-1,f|0), u=f-i;
     const p=mover.path[i], q=mover.path[i+1];
     mover.x=p[0]+(q[0]-p[0])*u; mover.y=p[1]+(q[1]-p[1])*u;
+    if(now-(mover.dustT||0)>22){                        // 移動中は後ろへ土煙
+      mover.dustT=now; const [dcx,dcy]=center(mover.x,mover.y), ang=Math.atan2(q[1]-p[1],q[0]-p[0]);
+      puff(dcx,dcy,3,{back:ang,sp:10,rise:3,r:14});
+    }
     if(t>=1) finishMove();
   }
   if(over){
@@ -787,6 +856,84 @@ function frame(now){
     ctx.font='bold 22px sans-serif'; ctx.fillText('Score '+score.toLocaleString('en-US')+'   (Undo or New Game)', innerWidth/2, innerHeight/2+22);
   }
   requestAnimationFrame(frame);
+}
+
+// ================= 効果音 (WebAudioで合成。素材ファイルなし) =================
+let AC=null, master=null, reverb=null, soundOn=true, noiseBuf=null, clackT=0;
+function audioInit(){
+  if(AC) { if(AC.state==='suspended') AC.resume(); return; }
+  try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(_){ return; }
+  master=AC.createGain(); master.gain.value=soundOn?1:0; master.connect(AC.destination);
+  noiseBuf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);
+  const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  { const len=AC.sampleRate*1.6, ir=AC.createBuffer(2,len,AC.sampleRate);          // 遠くで響く残響(減衰するノイズ)
+    for(let c=0;c<2;c++){ const ch=ir.getChannelData(c); for(let i=0;i<len;i++) ch[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5); }
+    const cv=AC.createConvolver(), lp=AC.createBiquadFilter(), wg=AC.createGain();
+    cv.buffer=ir; lp.type='lowpass'; lp.frequency.value=1800; wg.gain.value=.3;
+    reverb=AC.createGain(); reverb.connect(cv); cv.connect(lp); lp.connect(wg); wg.connect(master); }
+}
+function noiseSrc(){ const n=AC.createBufferSource(); n.buffer=noiseBuf; n.loop=true; n.start(0,Math.random()); return n; }
+function tone(freq,t0,dur,type,vol,dest){
+  const o=AC.createOscillator(), g=AC.createGain();
+  o.type=type; o.frequency.value=freq;
+  g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(vol,t0+.008); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  o.connect(g); g.connect(dest||master); o.start(t0); o.stop(t0+dur+.05);
+}
+// 引きずる音: 低くて小さい「ゴゴゴ」という地鳴り (太鼓のような打撃音はなし)
+function sfxDrag(dur){
+  if(!AC||!soundOn) return;
+  const t=AC.currentTime, end=t+dur+.1;
+  const env=AC.createGain(); env.gain.setValueAtTime(0.0001,t); env.gain.linearRampToValueAtTime(1,t+.1); env.gain.setValueAtTime(1,t+Math.max(.11,dur-.1)); env.gain.linearRampToValueAtTime(0.0001,end);
+  env.connect(master);
+  const n=noiseSrc(), f=AC.createBiquadFilter(), g=AC.createGain();       // 低いノイズを細かく震わせてゴゴゴ感を出す
+  f.type='lowpass'; f.frequency.value=75; f.Q.value=1.2; g.gain.value=.3;
+  g.gain.setValueAtTime(.12,t);                                          // 連打: 間隔も強さもバラバラに「ゴッ…ゴッ」と山をつくる
+  for(let q=.05; q<dur; q+=.36+Math.random()*.9){
+    const pk=.3+Math.random()*.3;
+    g.gain.setValueAtTime(.12,t+q); g.gain.linearRampToValueAtTime(pk,t+q+.04); g.gain.linearRampToValueAtTime(.12,t+q+.16);
+    f.frequency.setValueAtTime(75*(.7+Math.random()*.6), t+q);
+  }
+  n.connect(f); f.connect(g); g.connect(env);
+  const d=AC.createOscillator(), df=AC.createBiquadFilter(), dg=AC.createGain();   // 腹に響く低い唸り
+  d.type='sawtooth'; d.frequency.value=34; df.type='lowpass'; df.frequency.value=80; dg.gain.value=.18;
+  d.connect(df); df.connect(dg); dg.connect(env);
+  d.start(t); d.stop(end); n.stop(end);
+}
+// 合体: キラリン (上昇するベル音。レベルが高いほど高く華やか)
+function sfxMerge(tier){
+  if(!AC||!soundOn) return;
+  const t=AC.currentTime, base=880*Math.pow(2,Math.min(tier,8)/24), notes=[1,1.25,1.5,2,2.5];
+  const cnt=Math.min(5,3+(tier>3?1:0)+(tier>6?1:0));
+  for(let i=0;i<cnt;i++){
+    const f=base*notes[i], at=t+i*.055;
+    tone(f,at,.55,'sine',.16); tone(f*2.01,at,.3,'triangle',.05);
+  }
+}
+// 合体できない: 軽いブザー
+function sfxError(){
+  if(!AC||!soundOn) return;
+  const t=AC.currentTime, f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=900; f.connect(master);
+  for(let i=0;i<2;i++){ const at=t+i*.13; tone(150,at,.1,'sawtooth',.14,f); tone(155,at,.1,'square',.05,f); }
+}
+// 環境音: 電車が走っている間だけ、軽いカタンコトン(車と街の音はなし)
+// レールの継ぎ目を車輪が越える「ガタン」: 低い打撃音のみ
+function thud(t,vol){                                                    // 100m先から聞こえる、こもった小さな音
+  const o=AC.createOscillator(), og=AC.createGain(), lp=AC.createBiquadFilter();
+  o.type='triangle'; o.frequency.setValueAtTime(230,t); o.frequency.exponentialRampToValueAtTime(130,t+.12);
+  lp.type='lowpass'; lp.frequency.value=420; lp.Q.value=.3;              // 高音を削って遠くに感じさせる
+  og.gain.setValueAtTime(0.0001,t); og.gain.exponentialRampToValueAtTime(vol,t+.02); og.gain.exponentialRampToValueAtTime(0.0001,t+.22);
+  o.connect(lp); lp.connect(og); og.connect(master); og.connect(reverb); o.start(t); o.stop(t+.25);
+}
+function updateAmbience(now){
+  if(!AC||!soundOn||!MAPDEF.train) return;
+  const t=AC.currentTime, run=train.wait<=0 && train.stop<=0;
+  const a=run?Math.max(0,Math.min(1,(train.sc-TRAIN_START)/3,(TRAIN_END-train.sc)/3)):0;
+  if(a<=0){ clackT=0; return; }
+  if(clackT<t){ clackT=t+.02; }
+  while(clackT<t+.3){                                               // ガタン、ゴトン…(2拍1組でゆっくり)
+    thud(clackT,.09*a); thud(clackT+.17,.06*a);
+    clackT+=.62;
+  }
 }
 
 // ================= 入力 =================
@@ -815,9 +962,9 @@ function panBy(dx,dy){
   const v=userView||{...view};
   userView={s:v.s,tx:v.tx+dx,ty:v.ty+dy};
 }
-function deselect(){ sel=null; targets=new Map(); preview=null; }
+function deselect(){ if(hintMode) return; sel=null; targets=new Map(); preview=null; }
 function clickAt(e){
-  if(mover||over) return;
+  if(mover||over||hintMode) return;
   const c=pick(e);
   if(!c || !grid[c[1]][c[0]]){ if(sel) deselect(); return; }      // 建物以外(地面・道・盤面の外)を押したら選択をキャンセル
   const [x,y]=c, k=y*N+x, touch=e.pointerType!=='mouse';
@@ -835,12 +982,14 @@ function clickAt(e){
     const path=targets.get(k); preview=null; doMerge(sel,[x,y],path); return;
   }
   preview=null;                                    // 接続先でない駒: 選択は保ったまま知らせる
+  sfxError();
   setMsg('Not a match. Tap the selected piece to cancel, or pick a matching one.');
 }
 const ptrs=new Map(); let press=null;
 cv.addEventListener('contextmenu', e => e.preventDefault());
 cv.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.clientX,e.clientY,Math.exp(-e.deltaY*.0015)); }, {passive:false});
 cv.addEventListener('pointerdown', e => {
+  audioInit();
   cv.setPointerCapture(e.pointerId);
   ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(ptrs.size===1) press={x:e.clientX,y:e.clientY,moved:false};
@@ -883,17 +1032,22 @@ $('panelClose').onclick = () => { $('panel').style.display='none'; };
 $('panel').onclick = e => { if(e.target===$('panel')) $('panel').style.display='none'; };
 addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); } else if(e.key==='Escape'){ $('panel').style.display='none'; closeMenu(); deselect(); } });
 $('infoBtn').onclick = () => { showInfo=!showInfo; $('infoBtn').classList.toggle('on', showInfo); };    // ON/OFFはボタンの色だけで表す
+$('soundBtn').onclick = () => {
+  soundOn=!soundOn; $('soundBtn').classList.toggle('on', soundOn); $('soundBtn').textContent='Sound: '+(soundOn?'ON':'OFF'); audioInit();
+  if(master) master.gain.setTargetAtTime(soundOn?1:0, AC.currentTime, .05);
+};
+$('manualBtn').onclick = () => { const h=$('help'); h.style.display = h.style.display==='none' ? 'block' : 'none'; };
 $('undoBtn').textContent = `Undo (+${UNDO_SITES})`;
 $('passBtn').textContent = `Pass (+${PASS_SITES})`;
 $('hintBtn').textContent = `Hint (+${HINT_SITES})`;
-const closeMenu = () => { $('menuPanel').style.display='none'; };
+const closeMenu = () => { $('menuPanel').style.display='none'; $('help').style.display='none'; };
 $('menuBtn').onclick = () => { $('menuPanel').style.display='flex'; };
 $('menuClose').onclick = closeMenu;
 $('menuPanel').onclick = e => { if(e.target===$('menuPanel')) closeMenu(); };
 $('newBtn').onclick = () => { closeMenu(); newGame(); };
 function penalty(n){ for(let i=0;i<n;i++) startSite(randKind()); }
 function doPass(){
-  if(mover||over) return;
+  if(mover||over||hintMode) return;
   undoStack.push(snapshot()); if(undoStack.length>200) undoStack.shift();
   deselect(); turns++; stuck=false;
   penalty(PASS_SITES);
@@ -902,14 +1056,16 @@ function doPass(){
 }
 $('passBtn').onclick = doPass;
 $('hintBtn').onclick = () => {
-  if(mover||over) return;
+  if(mover||over||hintMode) return;
   if(!anyMove()){ setMsg('No moves available. Use Pass.'); return; }
   penalty(HINT_SITES);                             // ヒントのペナルティ
   const m=anyMove()||null; if(!m){ hud(); return; }
   sel=m; targets=targetsOf(m[0],m[1]);
   const first=[...targets.keys()][0]; preview=[first%N, first/N|0];   // 駒と、つなぐ相手を表示
-  hud(); setMsg(`Hint: +${HINT_SITES} new buildings`);
+  hintMode=true;
+  hud(); setMsg(`Hint: +${HINT_SITES} new buildings. Press OK to continue.`);
 };
+$('hintOk').onclick = () => { hintMode=false; sel=null; targets=new Map(); preview=null; hud(); setMsg(''); };
 
 
 $('mapTitle').textContent = MAPDEF.title;
