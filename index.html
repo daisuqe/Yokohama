@@ -25,12 +25,23 @@
   #menuPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:6}
   #menuBox{background:#1d2c35;border-radius:12px;padding:24px 28px;min-width:340px;display:flex;flex-direction:column;gap:16px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
   #menuBox{max-height:92vh;overflow:auto}
+  #confirmPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:8}
+  #confirmMsg{font-size:20px;max-width:320px;line-height:1.5}
   #menuBox h3{margin:0 0 6px;font-size:44px}
   #help{font-size:17px;line-height:1.55;max-width:560px} #help h4{margin:4px 0 6px;font-size:22px} #help ul{margin:0;padding-left:1.2em} #help li{margin-bottom:6px}
   #menuBox button{font-size:30px;padding:16px 24px;min-height:68px;border-radius:10px}
   button:disabled{opacity:.35;cursor:default;filter:none}
-  #passBtn.alert{background:#e65100;animation:passGlow 2.4s ease-in-out infinite}
-  @keyframes passGlow{0%,100%{filter:brightness(.85);box-shadow:0 0 0 0 rgba(255,160,60,0)}50%{filter:brightness(1.25);box-shadow:0 0 14px 5px rgba(255,160,60,.6)}}
+  #passBtn.alert{background:#e65100;animation:passGlow 3.2s ease-in-out infinite}
+  @keyframes passGlow{0%,100%{filter:brightness(.55);box-shadow:0 0 0 0 rgba(255,160,60,0)}50%{filter:brightness(1.4);box-shadow:0 0 16px 6px rgba(255,160,60,.7)}}
+  #stageSel{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:16px;overflow:auto;
+    background:linear-gradient(180deg,#addbfb 0%,#8eccf6 50%,#7dc3f2 100%)}
+  #stageSel h2{margin:0;font-size:44px;color:#fff;text-shadow:0 2px 6px rgba(10,30,50,.6)}
+  #stageList{display:flex;flex-wrap:wrap;gap:18px;justify-content:center}
+  .stageCard{background:rgba(20,40,55,.78);border-radius:14px;padding:14px 16px;width:210px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;
+    box-shadow:0 6px 18px rgba(0,0,0,.35);transition:transform .12s;border:0;color:#fff;min-height:0;font-size:22px}
+  .stageCard:hover{transform:translateY(-4px);filter:none} .stageCard canvas{position:static;width:168px;height:168px;image-rendering:pixelated;border-radius:8px}
+  .stageCard small{font-size:14px;opacity:.8}
+  @media (orientation:landscape) and (max-height:500px){ #stageSel{flex-direction:row;flex-wrap:wrap;gap:10px} #stageSel h2{font-size:24px;width:100%;text-align:center} .stageCard{width:150px;padding:8px} .stageCard canvas{width:100px;height:100px} .stageCard{font-size:16px} }
   #hintOk{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(44px,calc(env(safe-area-inset-bottom) + 34px));display:none;z-index:4;padding:12px 32px;font-size:30px;min-height:56px;box-shadow:0 3px 10px rgba(0,0,0,.45)}
   #panel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:5}
   #panelBox{background:#1d2c35;border-radius:10px;padding:14px 18px;max-width:92vw;max-height:88vh;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.5)}
@@ -52,6 +63,16 @@
     #mapTitle{font-size:28px} #msg{font-size:13px}
     #panelBox h3{font-size:26px} #panelBox table{font-size:15px}
   }
+  /* スマホ横持ち: 上部バーを1列に収め、グレー背景をなくして文字の影で読ませる */
+  @media (orientation:landscape) and (max-height:500px){
+    #hud{flex-wrap:nowrap;gap:0 10px;font-size:12px;padding:3px max(8px,env(safe-area-inset-right)) 3px max(8px,env(safe-area-inset-left));
+      padding-top:max(3px,env(safe-area-inset-top));background:none;backdrop-filter:none;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.75),0 0 2px rgba(0,0,0,.6)}
+    #hud b{font-size:16px;margin-left:3px}
+    #scoreBox b,#levelBox b{font-size:22px;margin-left:3px}
+    #hud .btns{flex-wrap:nowrap;gap:4px}
+    button{padding:3px 7px;font-size:12px;min-height:26px;text-shadow:none}
+    #mapTitle{font-size:20px}
+  }
 </style>
 </head>
 <body>
@@ -72,6 +93,7 @@
 </div>
 <div id="panel"><div id="panelBox"><div id="panelBody"></div><button id="panelClose">Close</button></div></div>
 <div id="menuPanel"><div id="menuBox"><h3>Menu</h3><button id="newBtn">New Game</button>
+  <button class="sub" id="stageBtn">Stage Select</button>
   <button class="sub toggle on" id="soundBtn">Sound: ON</button>
   <button class="sub" id="manualBtn">Manual</button>
   <div id="help" style="display:none"><h4>遊び方</h4><ul>
@@ -84,6 +106,9 @@
   </ul></div>
   <button class="sub" id="menuClose">Close</button></div></div>
 <button id="hintOk">OK</button>
+<div id="confirmPanel"><div id="menuBox"><h3>New Game?</h3><div id="confirmMsg">現在の盤面は破棄され、ステージ選択に戻ります。</div>
+  <button id="newYes">Yes</button><button class="sub" id="newNo">No</button></div></div>
+<div id="stageSel"><h2>Select Stage</h2><div id="stageList"></div></div>
 <div id="mapTitle"></div>
 <div id="msg"></div>
 
@@ -91,7 +116,7 @@
 "use strict";
 // ================= 設定 =================
 // ---- マップ定義 (x:左→右, y:上→下) ----
-// . 更地(建物を置ける)  r 道  W 運河  R 線路  S 駅
+// . 更地(建物を置ける)  r 道  W 運河  R 線路  S 駅  T ゴンドラ乗り場
 // 今後 bayside / chinatown を MAPS に追加し、?map=bayside のように指定して読み込む
 const MAPS = {
   yokohama: {
@@ -111,8 +136,46 @@ const MAPS = {
   'rrrrrrrrrrr'
 ]
   },
-  // bayside:   { title:'Bayside',    train:null, rows:[ ... ] },
-  // chinatown: { title:'Chinatown',  train:null, rows:[ ... ] },
+  minato: {
+    title: 'Minato Mirai',
+    train: null,
+    // ゴンドラ: 赤(道の上)から緑(道なしの乗り場)まで、ケーブルに沿って2台が行き来する
+    gondola: { path: [[2,7],[2,8],[2,9],[2,10],[2,11]] },
+    rows: [
+      'WWWWWWWWWWWW',
+      'W...r...W..W',
+      'W.rrrrr.W..W',
+      'W.r.r.r.W..W',
+      'rrrrrrr.W..W',
+      'W.r.r.r.W..W',
+      'W.rrrrr.W..W',
+      'W.r.r.r.W..W',
+      'WWrWrWrWWr.W',
+      '..r.r.r..r..',
+      'rrrrrrrrrrrr',
+      '..T.........'
+    ]
+  },
+  chinatown: {
+    title: 'China Town',
+    train: null,
+    // 門(牌楼): 道路の上に立つ。axis は道路が走る向き (NS=縦に動ける=赤, EW=横に動ける=緑)。門の面は道路をまたぐ向き
+    gates: [ {x:1,y:0,axis:'NS'}, {x:4,y:1,axis:'NS'}, {x:9,y:1,axis:'EW'}, {x:1,y:4,axis:'EW'}, {x:1,y:10,axis:'NS'}, {x:4,y:10,axis:'NS'} ],
+    rows: [
+      '.r..r.....rW',
+      '.rrrrrrrrrrW',
+      '.r..r..r..rW',
+      '.r..r..r..rW',
+      'rrrrrrrrrrrW',
+      '.r..r..r..rW',
+      '.r..r..r..rW',
+      '.rrrrrrrrrrW',
+      '.r..r..r..rW',
+      '.r..r..r..rW',
+      'rrrrrrrrrrrW',
+      '.r..r..r..rW'
+    ]
+  },
 };
 const MAPID = new URLSearchParams(location.search).get('map');
 const MAPDEF = MAPS[MAPID] || MAPS.yokohama;
@@ -139,8 +202,8 @@ const KINDS = [
 const nameOf = (k,v) => { const t=KINDS[k].tiers; return t[Math.min(Math.round(Math.log2(v)),t.length-1)]; };
 // ---- 地形 ----
 
-const LAND=0, ROAD=1, WATER=2, BRIDGE=3, RAIL=4, STATION=5;
-const CH = {'.':LAND,'r':ROAD,'W':WATER,'R':RAIL,'S':STATION};
+const LAND=0, ROAD=1, WATER=2, BRIDGE=3, RAIL=4, STATION=5, GSTN=6;   // GSTN: ゴンドラの乗り場(道なし。建物は建たず、駒も通れない)
+const CH = {'.':LAND,'r':ROAD,'W':WATER,'R':RAIL,'S':STATION,'T':GSTN};
 const terrain = MAPDEF.rows.map(row => [...row].map(c => CH[c]));
 // 運河を左右または上下に挟んでいる道 = 橋
 for(let y=0;y<N;y++) for(let x=0;x<N;x++){
@@ -211,7 +274,7 @@ function newGame(){
   const n = Math.round(cells.length*INIT_RATE);
   const kinds=Array.from({length:n},(_,i)=>i%KINDS.length); shuffle(kinds);   // 最初の種類の比率は均等(1個以内の差)
   for(let i=0;i<n;i++){ const [x,y]=cells[i]; grid[y][x]=randInit(); kind[y][x]=kinds[i]; anims.set(y*N+x,{t:performance.now()+i*4,type:'spawn'}); }
-  sites.clear(); undoStack.length=0; score=0; turns=0; bestValue=1; stats=newStats(); sel=null; targets=new Map(); preview=null; hintMode=false; mover=null; effects=[]; hover=null; over=false; boardFull=false; stuck=false;
+  sites.clear(); fresh.clear(); undoStack.length=0; score=0; turns=0; bestValue=1; stats=newStats(); sel=null; targets=new Map(); preview=null; hintMode=false; mover=null; effects=[]; hover=null; over=false; boardFull=false; stuck=false;
   bestValue = Math.max(1, ...grid.flat());   // 最初の盤面の最大の数字(1か2)
   setMsg('');
   hud(); checkGameOver();
@@ -231,7 +294,30 @@ function hud(){
   $('passBtn').disabled = hintMode;
   $('hintOk').style.display = hintMode ? 'block' : 'none';
   $('passBtn').classList.toggle('alert', stuck && !over);
+  saveGame();
 }
+// ---- オートセーブ: 盤面が変わるたびに保存し、次回起動時に続きから再開 ----
+const SAVE_KEY = 'yokohama-save-'+(MAPID||'yokohama');
+let saveOff=false;                                  // New Game で保存を消したあとは、保存し直さない
+function saveGame(){
+  if(saveOff || mover || !grid) return;                       // 駒の移動中は保存しない(直前の保存が残る)
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify({grid, kind, score, turns, bestValue, stats, over, boardFull, stuck,
+    sites:[...sites.values()].map(({x,y,k,v})=>({x,y,k,v})), undo:undoStack.slice(-50)})); }catch(_){}
+}
+function loadGame(){
+  try{
+    const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
+    if(!d || d.grid.length!==N || d.grid[0].length!==N) return false;
+    grid=d.grid; kind=d.kind; score=d.score; turns=d.turns; bestValue=d.bestValue; stats=d.stats;
+    fresh.clear(); sites.clear(); const now=performance.now(); for(const st of d.sites) sites.set(siteKey(st.x,st.y),{...st,t0:now});
+    undoStack.length=0; undoStack.push(...(d.undo||[]));
+    sel=null; targets=new Map(); preview=null; hintMode=false; mover=null; effects=[]; hover=null;
+    over=!!d.over; boardFull=!!d.boardFull; stuck=!!d.stuck;
+    hud(); checkGameOver(); return true;
+  }catch(_){ return false; }
+}
+addEventListener('pagehide', saveGame);
+document.addEventListener('visibilitychange', () => { if(document.hidden) saveGame(); });
 anims = new Map();
 
 // ================= ルール =================
@@ -305,23 +391,25 @@ function undo(){
   if(mover || hintMode || !undoStack.length) return;
   const h=undoStack.pop(), now=performance.now();
   grid=h.grid; kind=h.kind; score=h.score; turns=h.turns; bestValue=h.bestValue; stats=h.stats;
-  sites.clear(); for(const st of h.sites) sites.set(siteKey(st.x,st.y),{...st,t0:now});
+  fresh.clear(); sites.clear(); for(const st of h.sites) sites.set(siteKey(st.x,st.y),{...st,t0:now});
   anims.clear(); effects=[]; over=false; boardFull=false; stuck=false; sel=null; targets=new Map(); preview=null;
   penalty(UNDO_SITES);                              // Undoのペナルティ
   hud(); setMsg(`Undone: +${UNDO_SITES} new building`); checkGameOver();
 }
 function doMerge(a, b, path){
+  fresh.clear();
   undoStack.push(snapshot()); if(undoStack.length>200) undoStack.shift();
   const v = grid[a[1]][a[0]];
   grid[a[1]][a[0]] = 0;
   const full = [...path, b];
   const steps = full.length-1;
-  mover = {v, k:kind[a[1]][a[0]], path:full, b, t0:performance.now(), dur:Math.max(200, steps*70), x:a[0], y:a[1]};
+  mover = {v, k:kind[a[1]][a[0]], path:full, b, t0:performance.now(), dur:Math.max(200, steps*70)/.6, x:a[0], y:a[1]};
   sfxDrag(mover.dur/1000);
   sel=null; targets=new Map();
 }
 // 新築予定地 (柵で囲って BUILD_MS 後に建物が出来る)
 const sites = new Map();
+const fresh = new Set();                           // 工事直後で、次のターンまで柵を残すマス
 const siteKey = (x,y) => y*N+x;
 function startSite(k){
   const empt=[];
@@ -342,20 +430,28 @@ function checkGameOver(){
 }
 function updateSites(now){
   for(const [key,st] of sites){
-    if(now-st.t0<BUILD_MS) continue;
-    sites.delete(key);
+    if(now-st.t0<BUILD_MS){                          // 工事中は土煙を出し続ける
+      if(!(now<st.nextPuff)){ st.nextPuff=now+160; const [px,py]=center(st.x,st.y); puff(px,py,3,{ring:8,rise:6,r:9}); }
+      continue;
+    }
+    sites.delete(key); fresh.add(key);
     grid[st.y][st.x]=st.v; kind[st.y][st.x]=st.k;
     anims.set(key,{t:now,type:'spawn'});
     hud(); checkGameOver();
   }
 }
-// 32以上を作ると、32→レベル1, 64→レベル2, 128以上→レベル3 の建物(全種類)が消えて更地になる
-function clearLow(nv){
-  const t=tierOf(nv); if(t<5) return;
-  const lv=Math.min(t-4,3), val=Math.pow(2,lv), now=performance.now();
+// 64を作ると数字1(レベル1)、128で数字1と2、256以上で数字1・2・4(レベル1〜3)の建物が全種類消えて更地になる
+function clearLow(nv,b){
+  const t=tierOf(nv); if(t<1) return;
+  // 光の柱: 1+1の合体から出る。最初はごく低い白で、レベルが上がるごとに少しずつ高く・金色に、レベル8以上で最大 (lvは1〜3の連続値)
+  const lv=1+2*Math.min(1,(t-1)/7), tn=performance.now();
+  effects.push({type:'pillar', x:b[0], y:b[1], t:tn, lv, tint:KINDS[kind[b[1]][b[0]]].tint});
+  if(t<6) return;
+  const maxV=Math.pow(2,Math.min(t-6,2)), now=performance.now();
   for(let y=0;y<N;y++) for(let x=0;x<N;x++){
-    if(grid[y][x]!==val) continue;
-    effects.push({type:'pillar', x, y, t:now, lv, tint:KINDS[kind[y][x]].tint});
+    const v=grid[y][x];
+    if(!v || v>maxV) continue;
+    { const [px,py]=center(x,y); puff(px,py,10,{ring:10,rise:6,r:11}); }   // 消える建物は土煙
     grid[y][x]=0; anims.delete(y*N+x);
   }
 }
@@ -382,7 +478,7 @@ function finishMove(){
   effects.push({x:b[0], y:b[1], t:performance.now(), txt:'+'+pointsFor(nv).toLocaleString('en-US')});
   const pts=pointsFor(nv);
   turns++; bestValue=Math.max(bestValue,nv); score += pts; stats.pts[k]+=pts; stats.merges[k][tierOf(nv)]++;
-  clearLow(nv); sfxMerge(tierOf(nv));
+  clearLow(nv,b); sfxMerge(tierOf(nv));
   startSite(randKind());   // 新築は1件。種類は、直前に合体した種類とは無関係にランダム(住宅・商業・自然が同じ確率)
   hud();
   setMsg(`${KINDS[k].name}: ${nameOf(k,nv)}  +${pts.toLocaleString('en-US')}` );
@@ -423,11 +519,29 @@ function drawNum(v,k,cx,cy){
   ctx.lineJoin='round'; ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.strokeText(s,cx,cy);
   ctx.fillStyle=KINDS[k].numC; ctx.fillText(s,cx,cy);
 }
+let glowAmt=0;                                      // 描画中の建物の発光量(0〜1)
+const silCache=new Map();
+function silhouette(src){                           // 不透明部分を白で塗りつぶした画像
+  let c=silCache.get(src); if(c) return c;
+  const W=src.naturalWidth||src.width, H=src.naturalHeight||src.height;
+  c=document.createElement('canvas'); c.width=W; c.height=H;
+  const g=c.getContext('2d'); g.drawImage(src,0,0); g.globalCompositeOperation='source-in'; g.fillStyle='#fff'; g.fillRect(0,0,W,H);
+  silCache.set(src,c); return c;
+}
 function drawSprite(x,y,v,k,grow,lift,selected,im){
   const [cx,cy]=center(x,y), sz=TW;               // 48px画像をタイル幅(64)に合わせて拡大
   ctx.imageSmoothingEnabled=false;
   const hgt=sz*Math.max(.02,grow);
-  ctx.drawImage(showInfo?tinted(im,k):im, cx-sz/2, cy+TH/2-lift-hgt, sz, hgt);
+  const src=showInfo?tinted(im,k):im, dx=cx-sz/2, dy=cy+TH/2-lift-hgt;
+  ctx.drawImage(src, dx, dy, sz, hgt);
+  if(glowAmt>0){                                    // 合体直後: 絵のシルエットが発光し、グローがフェードして消える
+    const sil=silhouette(src), gl=glowAmt;
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    ctx.shadowColor='rgba(255,236,170,1)'; ctx.shadowBlur=26*gl*(dpr*view.s);
+    ctx.globalAlpha=Math.min(1,gl*1.1); ctx.drawImage(sil, dx, dy, sz, hgt);
+    ctx.shadowBlur=0; ctx.globalAlpha=gl*.7; ctx.drawImage(sil, dx, dy, sz, hgt);
+    ctx.restore();
+  }
   if(selected) poly(diamond(x,y,.95),null,'#ff6f00',3);
 }
 function drawBlock(x,y,v,k,h,lift,selected){
@@ -601,10 +715,23 @@ function drawSite(st,now){
     ctx.drawImage(showInfo?tinted(CONSTRUCTION_IMG,st.k):CONSTRUCTION_IMG, cx-TW/2, cy+TH/2-TW, TW, TW);
     return;
   }
-  const P=(u,v,z)=>{ const [a,b]=proj(x+u,y+v); return [a,b-z]; };
   poly(diamond(x,y,1), '#c8a66e', 'rgba(0,0,0,.2)', 1);                 // 地面(土)
+  drawFence(x,y,0); drawFence(x,y,1);
+}
+// 柵だけ(part 0=奥の2辺, 1=手前の2辺)。工事直後の建物の周りにも使う
+const FENCE_IMGS = ['construction_back','construction_front'].map(n=>Object.assign(new Image(), {src:'Icons/'+n+'.png'}));
+function drawFence(x,y,part){
+  const im=FENCE_IMGS[part];
+  if(im.complete && im.naturalWidth){                  // 画像があれば画像(construction.pngと同じ位置・大きさ)
+    const [cx,cy]=center(x,y);
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(im, cx-TW/2, cy+TH/2-TW, TW, TW);
+    return;
+  }
+  const H=10, m=.06;
+  const P=(u,v,z)=>{ const [a,b]=proj(x+u,y+v); return [a,b-z]; };
   const edges=[ [[m,m],[1-m,m]], [[m,m],[m,1-m]], [[1-m,m],[1-m,1-m]], [[m,1-m],[1-m,1-m]] ]; // 奥2辺→手前2辺
-  for(const [[u0,v0],[u1,v1]] of edges){
+  for(const [[u0,v0],[u1,v1]] of edges.slice(part*2,part*2+2)){
     const n=6;
     for(let i=0;i<n;i++){
       const a=i/n, b=(i+1)/n;
@@ -613,6 +740,78 @@ function drawSite(st,now){
     }
     poly([P(u0,v0,H),P(u1,v1,H),P(u1,v1,H+1.5),P(u0,v0,H+1.5)], '#5d4037');   // 上の横木
   }
+}
+
+// ---- 中華街の門(牌楼): 道路をまたぐ。axis は道路の走る向き。柱は道路の両脇、面は道路をまたぐ向き ----
+function boxAx(g,u0,u1,v0,v1,z0,z1,col,top){     // u: 道路をまたぐ向き / v: 道路に沿う向き
+  const {x,y}=g, sw=g.sw||1, sz=g.sz||1;            // sw: 幅の倍率(道路をまたぐ向き) / sz: 高さの倍率
+  u0=.5+(u0-.5)*sw; u1=.5+(u1-.5)*sw; z0*=sz; z1*=sz;
+  if(g.axis==='NS') boxC(x+u0,x+u1,y+v0,y+v1,z0,z1,col,top); else boxC(x+v0,x+v1,y+u0,y+u1,z0,z1,col,top);
+}
+function drawGate(g0,part){
+  const g={...g0,sw:.7,sz:.5};                        // 門は幅70%・高さ50%
+  const RED='#d3262b', GOLD='#e8b923', GRN='#1f9d6b', STONE='#9a948a';
+  const pillar=u=>{ boxAx(g,u-.02,u+.14,.42,.58,0,4,STONE); boxAx(g,u,u+.12,.44,.56,4,32,RED); };
+  if(part===0){ pillar(.08); return; }
+  pillar(.80);
+  boxAx(g,.08,.92,.45,.55,23,29,RED);                  // 梁(下)
+  boxAx(g,.08,.92,.46,.54,19,21,GOLD);                 // 飾り帯
+  boxAx(g,.02,.98,.36,.64,32,35,GOLD);                 // 屋根の縁(金)
+  boxAx(g,.0,1.0,.38,.62,35,38,GRN);                   // 屋根(緑の瓦)
+  boxAx(g,.3,.7,.44,.56,38,45,RED);                    // 中央の高い部分
+  boxAx(g,.26,.74,.40,.60,45,47,GOLD);
+  boxAx(g,.24,.76,.41,.59,47,50,GRN);                  // 上段の屋根
+  boxAx(g,.4,.6,.55,.57,39,44,GOLD);                   // 扁額(金の額)
+}
+// ---- みなとみらいのゴンドラ: 道の上(赤)から乗り場(緑)まで、ケーブルに沿って2台が逆向きに往復する ----
+const GOND = MAPDEF.gondola || null;
+const GOND_SPEED=.55, GOND_WAIT=2.5, GOND_Z=46;
+function gondolaS(now){                             // 2台の位置(パス上の距離, 0〜L)
+  const L=GOND.path.length-1, T=L/GOND_SPEED, P=2*(T+GOND_WAIT), tt=(now/1000)%P;
+  let f;                                            // 0→1→0 の往復 (端で止まり、動き出しと着く直前はなめらか)
+  if(tt<GOND_WAIT) f=0; else if(tt<GOND_WAIT+T){ const u=(tt-GOND_WAIT)/T; f=u*u*(3-2*u); }
+  else if(tt<2*GOND_WAIT+T) f=1; else { const u=(tt-2*GOND_WAIT-T)/T; f=1-u*u*(3-2*u); }
+  return [f*L,(1-f)*L];
+}
+function gondolaPt(s){                              // パス上の距離 s のワールド座標と、ケーブルの高さ
+  const path=GOND.path, L=path.length-1, i=Math.min(L-1,Math.floor(s)), f=s-i;
+  const x=path[i][0]+.5+(path[i+1][0]-path[i][0])*f, y=path[i][1]+.5+(path[i+1][1]-path[i][1])*f;
+  const k=Math.max(0,Math.min(1,(s-(L-1.3))/1.3));  // 乗り場の手前でケーブルが下がり、屋根の下へ入る
+  return [x,y,GOND_Z+(16-GOND_Z)*k*k*(3-2*k)];
+}
+function gondolaItems(items,now){
+  if(!GOND) return;
+  const path=GOND.path, L=path.length-1;
+  for(let i=0;i<L;i++){                             // ケーブル(セグメントごと)
+    const a=path[i], b=path[i+1];
+    items.push({x:a[0],y:a[1],d:(a[0]+a[1]+b[0]+b[1])/2+1,gd:()=>{
+      const [x0,y0,z0]=gondolaPt(i), [x1,y1,z1]=gondolaPt(i+1), p0=proj(x0,y0), p1=proj(x1,y1);
+      ctx.save(); ctx.strokeStyle='#3b3f44'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(p0[0],p0[1]-z0); ctx.lineTo(p1[0],p1[1]-z1); ctx.stroke(); ctx.restore();
+    }});
+  }
+  const a0=path[0], aL=path[L];
+  items.push({x:a0[0],y:a0[1],d:a0[0]+a0[1]+1.4,gd:()=>{         // 始点の支柱(道の脇)
+    const g={x:a0[0],y:a0[1],axis:'NS'};
+    boxAx(g,.84,.96,.44,.56,0,GOND_Z+6,'#8b9097'); boxAx(g,.5,.96,.46,.54,GOND_Z+3,GOND_Z+6,'#6f757c');
+  }});
+  items.push({x:aL[0],y:aL[1],d:aL[0]+aL[1]+.3,gd:()=>{          // 乗り場: ホームと奥側の柱・屋根(手前は開けてゴンドラが入る)
+    const g={x:aL[0],y:aL[1],axis:'NS'};
+    boxAx(g,.08,.92,.08,.92,0,4,'#cfc9bb');
+    boxAx(g,.1,.2,.1,.2,4,30,'#f1ede4'); boxAx(g,.8,.9,.1,.2,4,30,'#f1ede4');
+    boxAx(g,.06,.94,.06,.5,30,34,'#e53935','#f7f3ea');
+  }});
+  GOND.cab=gondolaS(now);
+  GOND.cab.forEach((s,k)=>{
+    const [x,y,z]=gondolaPt(s);
+    items.push({x,y,d:x+y+.2,gd:()=>{
+      const [px,py]=proj(x,y);
+      ctx.save(); ctx.strokeStyle='#3b3f44'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(px,py-z); ctx.lineTo(px,py-z+7); ctx.stroke(); ctx.restore();
+      const col=k?'#f4f4f4':'#e53935';
+      boxC(x-.13,x+.13,y-.13,y+.13,z-17,z-7,col);                // ゴンドラ本体
+      boxC(x-.11,x+.11,y-.11,y+.11,z-14,z-10,'#8fd0f0');         // 窓
+      boxC(x-.14,x+.14,y-.14,y+.14,z-7,z-5,'#333');              // 屋根
+    }});
+  });
 }
 
 // ---- 車 ----
@@ -678,8 +877,8 @@ function drawCar(c){
 const TRAIN_COL = !!(MAPDEF.train && MAPDEF.train.x !== undefined);       // true: 縦(y方向)に走る
 const TRAIN_L = (MAPDEF.train ? (TRAIN_COL ? MAPDEF.train.x : MAPDEF.train.y) : 0) + .5;   // 線路の位置
 const TRAIN_CARS = 4, TRAIN_SPEED = 3.5;
-const TRAIN_WAIT = 85;      // 次に走るまでの待ち時間(秒)。走行4.6秒に対し約5%の時間だけ見える
-const TRAIN_START = 0, TRAIN_END = N;           // 線路の両端(盤面の中)
+const TRAIN_WAIT = 42.5;    // 次に走るまでの待ち時間(秒)
+const TRAIN_START = -3, TRAIN_END = N+3;         // 線路の両端(盤面の外。編成全体が盤面の外に出るまで走る)
 const train = {sc:TRAIN_START, dir:1, wait:8, stop:0, passed:false};
 const STATION_STOP = 3;     // 駅での停車時間(秒)
 const STATION_C = (()=>{ const v=[]; for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(terrain[y][x]===STATION) v.push(TRAIN_COL?y:x); return v.length ? (Math.min(...v)+Math.max(...v)+1)/2 : null; })();   // 駅の中央
@@ -695,8 +894,7 @@ function updateTrain(dt){
 }
 function trainItems(items){
   if(!MAPDEF.train) return;
-  const a=Math.max(0,Math.min(1,(train.sc-TRAIN_START)/3,(TRAIN_END-train.sc)/3));   // 線路の両端でフェードイン・アウト
-  if(a<=0) return;
+  const a=1;                                          // フェードせず、盤面の端で切れて出入りする
   for(let i=0;i<TRAIN_CARS;i++){
     const ac=train.sc+(i-(TRAIN_CARS-1)/2)*1.0;      // 線路に沿った位置
     // 駅のマスより先に描いて、駅の建物で隠す(=駅に入る)
@@ -718,7 +916,10 @@ function drawRoadCover(x,y){
   drawRoadTile(im,x,y);
 }
 function drawTrainCar(t){
-  ctx.save(); ctx.globalAlpha=t.a; ctx.translate(0,CANAL_D);   // 線路は掘り下げてあるので電車も下げる
+  ctx.save();
+  { const L=TRAIN_L, w=3, q=TRAIN_COL ? [[L-w,0],[L+w,0],[L+w,N],[L-w,N]] : [[0,L-w],[N,L-w],[N,L+w],[0,L+w]];   // 盤面の範囲だけに表示(端で切れる)
+    ctx.beginPath(); q.forEach(([x,y],i)=>{ const [px,py]=proj(x,y); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }); ctx.closePath(); ctx.clip(); }
+  ctx.globalAlpha=t.a; ctx.translate(0,CANAL_D);   // 線路は掘り下げてあるので電車も下げる
   const P=(x,y,z)=>{const [px,py]=proj(x,y); return [px,py-z];};
   const xa = TRAIN_COL ? TRAIN_L-.14 : t.ac-.46, xb = TRAIN_COL ? TRAIN_L+.14 : t.ac+.46;
   const ya = TRAIN_COL ? t.ac-.46 : TRAIN_L-.14, yb = TRAIN_COL ? t.ac+.46 : TRAIN_L+.14;
@@ -766,7 +967,16 @@ function frame(now){
   for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(grid[y][x]) items.push({x,y,d:x+y,v:grid[y][x],k:kind[y][x]});
   for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(terrain[y][x]===STATION) items.push({x,y,d:x+y,st:1});
   if(mover) items.push({x:mover.x,y:mover.y,d:mover.x+mover.y+.4,v:mover.v,k:mover.k,mv:1});
+  for(const g of MAPDEF.gates||[]){                                 // 門: 奥の柱 → (車) → 手前の柱・梁・屋根
+    items.push({x:g.x,y:g.y,d:g.x+g.y+.65,gate:g,part:0}, {x:g.x,y:g.y,d:g.x+g.y+1.35,gate:g,part:1});
+  }
+  gondolaItems(items,now);
   for(const st of sites.values()) items.push({x:st.x,y:st.y,d:st.x+st.y,site:st});
+  for(const key of fresh){                                        // 工事が終わったばかりの建物: 奥の柵→建物→手前の柵
+    const fx=key%N, fy=key/N|0;
+    if(!grid[fy][fx]){ fresh.delete(key); continue; }
+    items.push({x:fx,y:fy,d:fx+fy-.001,fence:0}, {x:fx,y:fy,d:fx+fy+.001,fence:1});
+  }
   for(const c of cars){
     const px=c.gx+(c.tx-c.gx)*c.t+c.ox, py=c.gy+(c.ty-c.gy)*c.t+c.oy;
     items.push({x:px,y:py,d:px+py+.3,car:c});
@@ -779,21 +989,28 @@ function frame(now){
     if(it.tr){ drawTrainCar(it.tr); continue; }
     if(it.cover){ drawRoadCover(it.x,it.y); continue; }
     if(it.site){ drawSite(it.site,now); continue; }
-    let h=heightOf(it.v), lift=0, selected=false;
-    if(it.mv){ lift=8; }
+    if(it.fence!=null){ drawFence(it.x,it.y,it.fence); continue; }
+    if(it.gate){ drawGate(it.gate,it.part); continue; }
+    if(it.gd){ it.gd(); continue; }
+    let h=heightOf(it.v), lift=0, selected=false, glow=0;
+    if(it.mv){
+      lift=3;                                           // あまり浮かさず、真下に疑似ドロップシャドウ(50%)
+      const [sx,sy]=center(it.x,it.y);
+      ctx.save(); ctx.fillStyle='rgba(0,0,0,.5)'; ctx.beginPath(); ctx.ellipse(sx,sy,TW*.34,TH*.34,0,0,Math.PI*2); ctx.fill(); ctx.restore();
+    }
     else {
       const key=it.y*N+it.x, an=anims.get(key);
       if(an){
-        const t=(now-an.t)/(an.type==='spawn'?350:420);
+        const t=(now-an.t)/(an.type==='spawn'?350:700);
         if(t<0) continue;
         if(t>=1) anims.delete(key);
         else if(an.type==='spawn') h*=Math.max(.01,ease(t));
-        else lift=Math.sin(t*Math.PI)*14;
+        else { lift=Math.sin(Math.min(1,t*700/420)*Math.PI)*14; glow=Math.pow(1-t,1.6); }
       }
       if(sel && sel[0]===it.x && sel[1]===it.y){ lift+=6+2*Math.sin(now/150); selected=true; }
       else if(hv && hv[0]===it.x && hv[1]===it.y && !mover && !preview) lift+=3;
     }
-    drawBlock(it.x,it.y,it.v,it.k,h,lift,selected);
+    glowAmt=glow; drawBlock(it.x,it.y,it.v,it.k,h,lift,selected); glowAmt=0;
     const [ncx,ncy]=center(it.x,it.y);
     if(h/heightOf(it.v)>.6) nums.push([it.v,it.k,ncx,ncy-NUM_H]);
   }
@@ -806,7 +1023,7 @@ function frame(now){
   }
   drawLabels();
   // エフェクト
-  effects=effects.filter(e=>now-e.t<(e.type==='dust'?e.life:e.type==='pillar'?1100:900));
+  effects=effects.filter(e=>now-e.t<(e.type==='dust'?e.life:e.type==='pillar'?1400:e.type==='confetti'?3200:900));
   for(const e of effects){
     if(e.type==='dust'){
       const t=(now-e.t)/e.life; if(t<0) continue;
@@ -818,20 +1035,68 @@ function frame(now){
       ctx.restore();
       continue;
     }
+    if(e.type==='confetti'){
+      // 反射する紙吹雪: 薄く、ひらひら回転しながらきらっと光ってゆっくり落ちる
+      const D=2700, tt=(now-e.t)/D; if(tt<0) continue;
+      const [cx,cy]=center(e.x,e.y), s=Math.min(1,(e.lv-1)/2), seed=e.x*17+e.y*5, n=Math.round(10+s*34);
+      const hr=(i)=>{ const v=Math.sin(i*127.1+seed*311.7)*43758.5453; return v-Math.floor(v); };
+      ctx.save();
+      for(let i=0;i<n;i++){
+        const p=Math.min(1,tt/(.55+hr(i+7)*.45)); if(p>=1) continue;
+        const v0=50+hr(i+11)*(60+s*90), spread=(18+s*38)*(.3+hr(i+13)*.7)*(hr(i+17)<.5?-1:1);
+        const x=cx+spread*Math.sqrt(p)+Math.sin(p*7+i)*5, y=cy-14-v0*p+v0*1.35*p*p;
+        const flip=now/(110+hr(i+19)*140)+i, glint=Math.max(0,Math.sin(flip*1.7));
+        ctx.globalAlpha=Math.min(1,p*8)*(1-p)*(.3+.3*glint);
+        ctx.fillStyle=`hsl(${44+hr(i+23)*12},${Math.round(s*(70+hr(i+29)*30))}%,${Math.round(72+glint*28)}%)`;
+        ctx.save(); ctx.translate(x,y); ctx.rotate(flip*.8);
+        const w=2.5+hr(i+31)*2.5; ctx.fillRect(-w,-1.6*Math.abs(Math.cos(flip)),w*2,3.2*Math.abs(Math.cos(flip))+.4);
+        ctx.restore();
+      }
+      ctx.restore();
+      continue;
+    }
     if(e.type==='pillar'){
-      const t=(now-e.t)/1100, [cx,cy]=center(e.x,e.y), hw=TW/2, hh=TH/2;
-      const H=(30+e.lv*34)*Math.min(1,t*3.5), a=t<.3?1:1-(t-.3)/.7;      // 上へ伸びてから薄れる
+      // 光の柱: 低レベルは控えめな白、レベルが上がるほど強く金色に
+      const D=1400, t=(now-e.t)/D, [cx,cy]=center(e.x,e.y), hw=TW/2, hh=TH/2;
+      const s=Math.min(1,(e.lv-1)/2), seed=e.x*13+e.y*7;
+      const rise=Math.min(1,t*4), H=(28+s*222)*(1-Math.pow(1-rise,3)), a=t<.25?1:Math.max(0,1-(t-.25)/.75);
+      const pw=.55+s*.45, col=(al,w=0)=>`rgba(255,${Math.round(255-s*(55-w*40))},${Math.round(255-s*(190-w*150))},${al})`;
+      const hr=(i)=>{ const v=Math.sin(i*127.1+seed*311.7)*43758.5453; return v-Math.floor(v); };
+      ctx.save(); ctx.globalCompositeOperation='lighter';
+      // 柱本体(ひし形の押し出し)
       const g=ctx.createLinearGradient(0,cy,0,cy-H);
-      g.addColorStop(0,e.tint); g.addColorStop(1,'rgba(255,255,255,0)');
-      ctx.save(); ctx.globalAlpha=Math.max(0,a)*.75;
-      ctx.fillStyle=g;                                   // ひし形を縦に押し出した光の柱
+      g.addColorStop(0,col(.9*a*pw)); g.addColorStop(.6,col(.45*a*pw,.5)); g.addColorStop(1,col(0));
+      ctx.fillStyle=g;
       ctx.beginPath(); ctx.moveTo(cx-hw,cy); ctx.lineTo(cx,cy+hh); ctx.lineTo(cx+hw,cy); ctx.lineTo(cx+hw,cy-H); ctx.lineTo(cx,cy-hh-H); ctx.lineTo(cx-hw,cy-H); ctx.closePath(); ctx.fill();
-      poly(diamond(e.x,e.y,1),'rgba(255,255,255,.55)',e.tint,3);
+      // 縦の光条(ちらつく)
+      const nb=4+e.lv*2;
+      for(let i=0;i<nb;i++){
+        const bx=cx+(hr(i)*2-1)*hw*.85, bw=2+hr(i+50)*(4+s*4), bh=H*(.6+hr(i+90)*.6), fl=.85;
+        const lg=ctx.createLinearGradient(0,cy,0,cy-bh); lg.addColorStop(0,col(.95*a*fl,1)); lg.addColorStop(1,col(0));
+        ctx.fillStyle=lg; ctx.fillRect(bx-bw/2,cy-bh,bw,bh);
+      }
+      // 中心の明るい芯
+      const cg=ctx.createLinearGradient(0,cy,0,cy-H*.9); cg.addColorStop(0,`rgba(255,255,255,${.9*a})`); cg.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=cg; ctx.fillRect(cx-hw*.18,cy-H*.9,hw*.36,H*.9);
+      // 光の粒: 小さな四角が直線的にほんの少しだけ上へ動く(揺れなし)
+      const np=10+e.lv*8;
+      for(let i=0;i<np;i++){
+        const pt=(t*.5+hr(i+200)*.5)%1, sz=1+hr(i+500)*(1+s), px=cx+(hr(i+300)*2-1)*hw*.9, py=cy-hr(i+400)*H*.85-pt*10;
+        ctx.fillStyle=col(Math.min(1,(1-pt)*1.6)*a,1); ctx.fillRect(Math.round(px-sz/2),Math.round(py-sz/2),sz,sz);
+      }
+      ctx.restore();
+      // 地面に広がるひし形の波紋: グロー・グラデ・加算合成なしの、ただの1pxワイヤーフレーム(広がりながら薄くなる)
+      ctx.save(); ctx.lineWidth=1/view.s; ctx.strokeStyle=col(1,1);
+      for(let r=0;r<2;r++){
+        const rt=Math.min(1,Math.max(0,t*1.15-r*.15)); if(rt<=0||rt>=1) continue;
+        ctx.globalAlpha=Math.max(0,1-rt*2)*.5;                 // 半分の時間で消え、濃さも半分
+        if(ctx.globalAlpha<=0) continue;
+        poly(diamond(e.x,e.y,1+rt*(1.6+s*1.6)),null,col(1,1),1/view.s);
+      }
       ctx.restore();
       continue;
     }
     const t=(now-e.t)/900, [cx,cy]=center(e.x,e.y);
-    poly(diamond(e.x,e.y,1+t*1.5),null,`rgba(255,255,255,${1-t})`,3);
     ctx.font='bold 20px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillStyle=`rgba(255,255,255,${1-t})`; ctx.strokeStyle=`rgba(0,0,0,${.6*(1-t)})`; ctx.lineWidth=3;
     ctx.strokeText(e.txt,cx,cy-heightOf(8)-20-t*30); ctx.fillText(e.txt,cx,cy-heightOf(8)-20-t*30);
@@ -883,19 +1148,21 @@ function tone(freq,t0,dur,type,vol,dest){
 function sfxDrag(dur){
   if(!AC||!soundOn) return;
   const t=AC.currentTime, end=t+dur+.1;
-  const env=AC.createGain(); env.gain.setValueAtTime(0.0001,t); env.gain.linearRampToValueAtTime(1,t+.1); env.gain.setValueAtTime(1,t+Math.max(.11,dur-.1)); env.gain.linearRampToValueAtTime(0.0001,end);
+  const env=AC.createGain(); env.gain.setValueAtTime(0.0001,t); env.gain.linearRampToValueAtTime(8,t+.1); env.gain.setValueAtTime(8,t+Math.max(.11,dur-.1)); env.gain.linearRampToValueAtTime(0.0001,end);
   env.connect(master);
   const n=noiseSrc(), f=AC.createBiquadFilter(), g=AC.createGain();       // 低いノイズを細かく震わせてゴゴゴ感を出す
-  f.type='lowpass'; f.frequency.value=75; f.Q.value=1.2; g.gain.value=.3;
-  g.gain.setValueAtTime(.12,t);                                          // 連打: 間隔も強さもバラバラに「ゴッ…ゴッ」と山をつくる
-  for(let q=.05; q<dur; q+=.36+Math.random()*.9){
-    const pk=.3+Math.random()*.3;
-    g.gain.setValueAtTime(.12,t+q); g.gain.linearRampToValueAtTime(pk,t+q+.04); g.gain.linearRampToValueAtTime(.12,t+q+.16);
-    f.frequency.setValueAtTime(75*(.7+Math.random()*.6), t+q);
+  f.type='lowpass'; f.frequency.value=36; f.Q.value=1.2; g.gain.value=.3;
+  g.gain.setValueAtTime(.1,t);                                           // 連打: ゆっくり・まばらに「ゴッ…………ゴッ」。山ごとに音の高さも変える
+  const d=AC.createOscillator(), df=AC.createBiquadFilter(), dg=AC.createGain();   // 腹に響く低い唸り
+  const scale=[17,19,21,23,26,28];                                       // 低い唸りの音階(Hz)
+  d.type='sawtooth'; d.frequency.value=scale[Math.random()*scale.length|0]; df.type='lowpass'; df.frequency.value=50; dg.gain.value=.2;
+  for(let q=.05; q<dur; q+=.8+Math.random()*1.6){
+    const pk=.3+Math.random()*.35;
+    g.gain.setValueAtTime(.1,t+q); g.gain.linearRampToValueAtTime(pk,t+q+.08); g.gain.linearRampToValueAtTime(.1,t+q+.35);
+    f.frequency.setValueAtTime(36*(.6+Math.random()*.9), t+q);
+    d.frequency.setValueAtTime(scale[Math.random()*scale.length|0], t+q);
   }
   n.connect(f); f.connect(g); g.connect(env);
-  const d=AC.createOscillator(), df=AC.createBiquadFilter(), dg=AC.createGain();   // 腹に響く低い唸り
-  d.type='sawtooth'; d.frequency.value=34; df.type='lowpass'; df.frequency.value=80; dg.gain.value=.18;
   d.connect(df); df.connect(dg); dg.connect(env);
   d.start(t); d.stop(end); n.stop(end);
 }
@@ -907,6 +1174,15 @@ function sfxMerge(tier){
   for(let i=0;i<cnt;i++){
     const f=base*notes[i], at=t+i*.055;
     tone(f,at,.55,'sine',.16); tone(f*2.01,at,.3,'triangle',.05);
+  }
+  // ゴージャス感: 下に支える柔らかい和音 + うっすら降りそそぐキラキラ音
+  const rich=Math.min(1,.3+tier/8);
+  tone(base/2,t,.6,'sine',.008*rich);
+  const sg=AC.createGain(); sg.gain.value=1; sg.connect(master); if(reverb) sg.connect(reverb);
+  const pent=[1,9/8,5/4,3/2,5/3], n=5+Math.round(rich*8);
+  for(let i=0;i<n;i++){
+    const at=t+i*(.02+Math.random()*.03), f=base*2*pent[Math.random()*5|0]*(Math.random()<.5?1:2);
+    tone(f,at,.25+Math.random()*.15,'sine',(.002+Math.random()*.003)*(.6+rich*.6),sg);
   }
 }
 // 合体できない: 軽いブザー
@@ -931,7 +1207,7 @@ function updateAmbience(now){
   if(a<=0){ clackT=0; return; }
   if(clackT<t){ clackT=t+.02; }
   while(clackT<t+.3){                                               // ガタン、ゴトン…(2拍1組でゆっくり)
-    thud(clackT,.09*a); thud(clackT+.17,.06*a);
+    thud(clackT,.18*a); thud(clackT+.17,.12*a);
     clackT+=.62;
   }
 }
@@ -1044,11 +1320,38 @@ const closeMenu = () => { $('menuPanel').style.display='none'; $('help').style.d
 $('menuBtn').onclick = () => { $('menuPanel').style.display='flex'; };
 $('menuClose').onclick = closeMenu;
 $('menuPanel').onclick = e => { if(e.target===$('menuPanel')) closeMenu(); };
-$('newBtn').onclick = () => { closeMenu(); newGame(); };
+$('newBtn').onclick = () => { closeMenu(); $('confirmPanel').style.display='flex'; };
+$('newNo').onclick = () => { $('confirmPanel').style.display='none'; };
+$('newYes').onclick = () => {                         // 今のステージの保存を消して、ステージ選択へ戻る
+  try{ localStorage.removeItem(SAVE_KEY); }catch(_){}
+  window.removeEventListener('pagehide', saveGame); saveOff=true;
+  location.href = location.pathname;
+};
+$('stageBtn').onclick = () => { saveGame(); location.href = location.pathname; };   // ?map なしで開き直すとステージ選択
+// ---- ステージ選択: ?map= が無いときは最初に選ぶ ----
+(function(){
+  if(MAPID && MAPS[MAPID]) return;
+  const COL={'.':'#55b025','r':'#3a3e44','W':'#2a8ff5','R':'#4a4748','S':'#bdb8aa','T':'#d9d2c0'};
+  for(const [id,m] of Object.entries(MAPS)){
+    const n=m.rows.length, c=document.createElement('canvas'); c.width=c.height=n*14;
+    const g=c.getContext('2d');
+    m.rows.forEach((row,y)=>[...row].forEach((ch,x)=>{ g.fillStyle=COL[ch]||'#55b025'; g.fillRect(x*14,y*14,14,14); }));
+    g.fillStyle='#e53935';
+    for(const gt of m.gates||[]) g.fillRect(gt.x*14+2,gt.y*14+2,10,10);                 // 門
+    if(m.gondola) for(const [x,y] of m.gondola.path) g.fillRect(x*14+3,y*14+3,8,8);     // ゴンドラ
+    let saved=false; try{ saved=!!localStorage.getItem('yokohama-save-'+id); }catch(_){}
+    const b=document.createElement('button'); b.className='stageCard';
+    b.innerHTML=`<span>${m.title}</span>`; b.insertBefore(c,b.firstChild);
+    const sm=document.createElement('small'); sm.textContent=saved?'Continue':'New'; b.appendChild(sm);
+    b.onclick=()=>{ location.href=location.pathname+'?map='+id; };
+    $('stageList').appendChild(b);
+  }
+  $('stageSel').style.display='flex';
+})();
 function penalty(n){ for(let i=0;i<n;i++) startSite(randKind()); }
 function doPass(){
   if(mover||over||hintMode) return;
-  undoStack.push(snapshot()); if(undoStack.length>200) undoStack.shift();
+  fresh.clear(); undoStack.push(snapshot()); if(undoStack.length>200) undoStack.shift();
   deselect(); turns++; stuck=false;
   penalty(PASS_SITES);
   hud(); setMsg(`Passed: +${PASS_SITES} new buildings`);
@@ -1071,7 +1374,7 @@ $('hintOk').onclick = () => { hintMode=false; sel=null; targets=new Map(); previ
 $('mapTitle').textContent = MAPDEF.title;
 function placeTitle(){ $('mapTitle').style.top = ($('hud').offsetHeight+6)+'px'; }
 addEventListener('resize', placeTitle); placeTitle();
-newGame();
+if(!loadGame()) newGame();
 initCars(CAR_COUNT);
 requestAnimationFrame(frame);
 </script>
