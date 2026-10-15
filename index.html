@@ -295,7 +295,7 @@ const PASS_SITES = 4;
 const HINT_SITES = 2;
 const UNDO_SITES = 1;
 const LV_PROB = [.45,.35,.20]; // 新築が1,2,3段階目になる確率       // 初期配置率
-const BUILD_MS = 1000;        // 新築の工事時間(柵で囲う)
+const BUILD_MS = 2000;        // 新築の工事時間(柵で囲う。この間ずっと土煙が出る)
 // 駒の種類 (同じ種類・同じ数字だけ合体できる)
 const KINDS = [
   {name:'Residential',          top:'#6f9fd6', num:'#ffffff', ink:'#0a2f66', numC:'#3a7fff', icon:'house', tint:'#2f7bff', tintA:.49, gamma:.1,   // 青の濃さ(以前の0.7の7割)
@@ -574,6 +574,7 @@ function startSite(k,avoid){                          // avoid: 新築を置か�
   const [x,y]=empt[Math.random()*empt.length|0];
   const v = randVal();
   sites.set(siteKey(x,y), {x,y,k,v,t0:performance.now()});
+  sfxHammer();
   return true;
 }
 const RANK_KEY = 'yokohama-ranking', RANK_MAX = 10;
@@ -627,7 +628,7 @@ function checkGameOver(){
 function updateSites(now){
   for(const [key,st] of sites){
     if(now-st.t0<BUILD_MS){                          // 工事中は土煙を出し続ける
-      if(!(now<st.nextPuff)){ st.nextPuff=now+160; const [px,py]=center(st.x,st.y); puff(px,py,3,{ring:8,rise:6,r:9}); }
+      if(!(now<st.nextPuff)){ st.nextPuff=now+130; const [px,py]=center(st.x,st.y); puff(px,py,8,{ring:8,rise:6,r:9}); }
       continue;
     }
     sites.delete(key); fresh.add(key);
@@ -1582,17 +1583,51 @@ function sfxDrag(dur){
   f.type='lowpass'; f.frequency.value=36; f.Q.value=1.2; g.gain.value=.3;
   g.gain.setValueAtTime(.1,t);                                           // 連打: ゆっくり・まばらに「ゴッ…………ゴッ」。山ごとに音の高さも変える
   const d=AC.createOscillator(), df=AC.createBiquadFilter(), dg=AC.createGain();   // 腹に響く低い唸り
-  const scale=[17,19,21,23,26,28];                                       // 低い唸りの音階(Hz)
+  const scale=[12,13.5,15,16,18,20];                                       // 低い唸りの音階(Hz)。連打の速さ = この周波数
   d.type='sawtooth'; d.frequency.value=scale[Math.random()*scale.length|0]; df.type='lowpass'; df.frequency.value=50; dg.gain.value=.2;
+  const beats=[];                                                        // 山(ゴッ)ごとの、時刻と唸りの高さ
   for(let q=.05; q<dur; q+=.8+Math.random()*1.6){
-    const pk=.3+Math.random()*.35;
+    const pk=.3+Math.random()*.35, fq=scale[Math.random()*scale.length|0];
     g.gain.setValueAtTime(.1,t+q); g.gain.linearRampToValueAtTime(pk,t+q+.08); g.gain.linearRampToValueAtTime(.1,t+q+.35);
     f.frequency.setValueAtTime(36*(.6+Math.random()*.9), t+q);
-    d.frequency.setValueAtTime(scale[Math.random()*scale.length|0], t+q);
+    beats.push([q,fq]);
   }
+  let fb=scale[Math.random()*scale.length|0], bi=0;
+  for(let q=0; q<dur+.1; q+=.06+Math.random()*.1){                       // ダダダダ…の1音ずつの間隔が、少しずつずれるよう、唸りの高さを細かく揺らす(規則的なパルスにならない)
+    while(bi<beats.length && beats[bi][0]<=q){ fb=beats[bi][1]; bi++; }
+    d.frequency.setValueAtTime(fb*(.8+Math.random()*.4), t+q);
+  }
+  const n2=noiseSrc(), bp=AC.createBiquadFilter(), g2=AC.createGain();   // 少し高い「ガガッ」: 山ごとに、短く2〜3回、うすく混ぜる
+  bp.type='bandpass'; bp.frequency.value=250; bp.Q.value=1.4; g2.gain.setValueAtTime(.0001,t);
+  for(const [q] of beats){
+    const cnt=2+(Math.random()*2|0);
+    for(let j=0;j<cnt;j++){
+      const at=t+q+.02+j*(.06+Math.random()*.03);
+      g2.gain.setValueAtTime(.0001,at); g2.gain.linearRampToValueAtTime(.015*(.6+Math.random()*.6),at+.012); g2.gain.linearRampToValueAtTime(.0001,at+.05);
+      bp.frequency.setValueAtTime(190+Math.random()*150,at);
+    }
+  }
+  n2.connect(bp); bp.connect(g2); g2.connect(env); n2.stop(end);
   n.connect(f); f.connect(g); g.connect(env);
   d.connect(df); df.connect(dg); dg.connect(env);
   d.start(t); d.stop(end); n.stop(end);
+}
+// 新築の工事音: ひかえめな、鉄のハンマーで金属を叩く「カーン…カーン…」(ノイズなし・音程のある音だけ。工事の2秒のうちに、同じ音を3回)。同時に何軒か始まるときは、1回分だけ
+let hammerT=0;
+function sfxHammer(){
+  if(!AC||!soundOn) return;
+  const now=performance.now(); if(now-hammerT<500) return; hammerT=now;
+  const t=AC.currentTime, dst=AC.createGain(); dst.gain.value=.2; dst.connect(master); if(reverb) dst.connect(reverb);
+  const f0=680;
+  for(let i=0;i<3;i++){
+    const at=t+.8+i*.4;                                                                           // 3回とも、まったく同じ音
+    // 鉄の、重くて硬い響き: 低めの基音(三角波)と、ずれた倍音を、短めに伸ばす + 叩いた瞬間の、鈍い「ゴン」
+    for(const [m,vol,dec,ty] of [[1,.07,.38,'triangle'],[2.32,.035,.22,'sine'],[4.1,.02,.12,'sine'],[6.7,.01,.07,'sine'],[.34,.06,.07,'triangle']]){
+      const o=AC.createOscillator(), g=AC.createGain(); o.type=ty; o.frequency.value=f0*m;
+      g.gain.setValueAtTime(.0001,at); g.gain.exponentialRampToValueAtTime(vol,at+.002); g.gain.exponentialRampToValueAtTime(.0001,at+dec);
+      o.connect(g); g.connect(dst); o.start(at); o.stop(at+dec+.05);
+    }
+  }
 }
 // 合体: キラリン (上昇するベル音。レベルが高いほど高く華やか)
 function sfxMerge(tier){
