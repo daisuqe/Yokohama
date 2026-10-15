@@ -1837,7 +1837,10 @@ $('titleRank').onclick = () => {
   showRank(first); $('rankPanel').style.display='flex';
 };
 let rankFirst=new URLSearchParams(location.search).get('rank');      // ?rank=<ステージ>: クリア後、そのステージのランキングを開いた状態でタイトルへ
-if(rankFirst && !(MAPID && MAPS[MAPID])) setTimeout(()=>$('titleRank').click(),0);
+if(rankFirst && !(MAPID && MAPS[MAPID])) setTimeout(()=>{
+  $('titleRank').click();
+  try{ const u=new URL(location.href); u.searchParams.delete('rank'); history.replaceState(null,'',u.pathname+u.search+u.hash); }catch(_){}   // URLからは消す(リロードしても、ランキングが開きっぱなしにならない)
+},0);
 $('rankClose').onclick = () => { $('rankPanel').style.display='none'; };
 $('rankPanel').onclick = e => { if(e.target===$('rankPanel')) $('rankPanel').style.display='none'; };
 $('manualClose').onclick = () => { $('manualPanel').style.display='none'; };
