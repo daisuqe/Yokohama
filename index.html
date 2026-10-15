@@ -16,7 +16,7 @@
     text-shadow:0 1px 3px rgba(0,0,0,.75),0 0 2px rgba(0,0,0,.6)}
   #hud button{text-shadow:0 1px 2px rgba(0,45,70,.55)}
   #hud button{background:#2fb4ea} #hud button.sub{background:#6fcdf0}     /* ゲーム中の上のボタン: 水色寄りで爽やかに */
-  #hud button.toggle.on{background:#8bc34a} #hud button.toggle:not(.on){background:#b7cfa0;opacity:.9}     /* Labels: 黄緑 */      /* 明るいボタンでも文字が読めるよう、細い影を付ける */
+  #hud button.toggle.on{background:#9be32e} #hud button.toggle:not(.on){background:#bddc8f;opacity:.9}     /* Labels: 黄緑 */      /* 明るいボタンでも文字が読めるよう、細い影を付ける */
   #hud b{font-size:32px;margin-left:10px}
   #scoreBox b,#levelBox b{font-size:60px;line-height:1;margin-left:10px;letter-spacing:.01em;text-shadow:0 2px 6px rgba(0,0,0,.45)}
   #hud .sp{flex:1}
@@ -30,8 +30,8 @@
   #menuBox{background:#1d2c35;border-radius:12px;padding:24px 28px;min-width:340px;display:flex;flex-direction:column;gap:16px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
   #menuBox{max-height:92vh;overflow:auto}
   #confirmPanel,#queryPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:40}
-  #overPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.62);z-index:25}
-  #overInfo{font-size:26px;line-height:1.5;text-align:center} #overInfo b{font-size:40px}
+  #doneBtn{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(44px,calc(env(safe-area-inset-bottom) + 34px));display:none;z-index:6;background:#2fb4ea}   /* クリア後: 右下の、ランキングへ進むボタン(上のボタンと同じ普通の見た目) */
+  #msg.clear{font-weight:800;color:#fff7c2;text-shadow:0 2px 6px rgba(120,60,0,.85)}
   #queryMsg{white-space:pre-line;font-size:20px;max-width:320px;line-height:1.5}
   #confirmMsg{font-size:20px;max-width:320px;line-height:1.5}
   #menuBox h3{margin:0 0 6px;font-size:44px}
@@ -50,6 +50,8 @@
   #rankMode{display:none;gap:8px} #rankMode button{font-size:18px;min-height:38px;padding:4px 16px;border-radius:8px} #rankMode button.on{background:#2e9d6a}
   #rankNameRow{display:none;font-size:18px;align-items:center;gap:10px} #rankNameRow button{font-size:16px;min-height:34px;padding:2px 12px}
   #rankBody th.nm{text-align:left}
+  #rankPanel.wide #rankBody{display:flex;gap:28px;align-items:flex-start} #rankPanel.wide .rankCol{flex:1 1 0;min-width:0} #rankPanel.wide #menuBox{max-width:96vw}
+  #rankBody .rankCol h4{margin:0 0 6px;font-size:22px;text-align:center}
   #rankBody td.nm{text-align:left;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #rankPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:30}
   #rankTabs{display:flex;gap:8px;flex-wrap:wrap} #rankTabs button{font-size:18px;min-height:40px;padding:6px 14px;border-radius:8px} #rankTabs button.on{background:#2e9d6a}
@@ -167,14 +169,14 @@
   <button id="newYes">Yes</button><button class="sub" id="newNo">No</button></div></div>
 <div id="queryPanel"><div id="menuBox"><h3 id="queryTitle">Game Over?</h3><div id="queryMsg"></div>
   <button id="queryYes">Yes</button><button class="sub" id="queryNo">No</button></div></div>
-<div id="overPanel"><div id="menuBox"><h3>Game Over</h3><div id="overInfo"></div><button id="overBack">Back to Title</button></div></div>
+<button id="doneBtn">Ranking &#9654;</button>
 <div id="stageSel"><h2>Yokohama</h2><div id="stageList"></div><div id="titleBtns"><button id="titleRank">Ranking</button><button id="titleManual">How to Play</button></div></div>
 <div id="rankPanel"><div id="menuBox"><h3>Ranking</h3><div id="rankTabs"></div>
   <div id="rankMode"><button class="sub on" data-m="all">Global</button><button class="sub" data-m="me">Local</button></div>
   <div id="rankBody"></div>
   <div id="rankNameRow">Name: <b id="rankNameText"></b> <button class="sub" id="rankNameBtn">Change</button></div>
   <button class="sub" id="rankClose">Close</button></div></div>
-<div id="namePanel"><div id="menuBox"><h3>Your Name</h3><div id="nameMsg">Enter a name for the ranking (up to 8 characters).</div>
+<div id="namePanel"><div id="menuBox"><h3>Your Name</h3><div id="nameMsg">ランキングに載せる名前を入力してください(8文字まで)。</div>
   <input id="nameInput" maxlength="8" autocomplete="off" placeholder="Name"><button id="nameSave">Save</button><button class="sub" id="nameSkip">Skip</button></div></div>
 <div id="manualPanel"><div id="menuBox"><h3>How to Play</h3><div id="manualBody"></div><button class="sub" id="manualClose">Close</button></div></div>
 <div id="fxLayer"></div>
@@ -190,7 +192,7 @@
 // 今後 bayside / chinatown を MAPS に追加し、?map=bayside のように指定して読み込む
 const MAPS = {
   yokohama: {
-    title: 'Yokohama Station',
+    title: 'Yokohama Station', short: 'Station',
     previewMix: [.25, .5, .25],    // タイトル画面の絵の建物の割合 [住宅,商業,自然]
     railStyle: 'keikyu',           // 電車・駅の色 (keikyu: 京急 / jr: JR京浜東北線)
     train: {y:0},                  // 電車が走る線路 ({x:列} なら縦に、{y:行} なら横に走る。無ければ null)
@@ -209,29 +211,29 @@ const MAPS = {
 ]
   },
   minato: {
-    title: 'Minato Mirai',
+    title: 'Minato Mirai', short: 'MM',
     previewMix: [.25, .5, .25],    // タイトル画面の絵の建物の割合 [住宅,商業,自然]
     railStyle: 'jr',
-    train: {y:10},                 // 桜木町(左) - 関内(右) の線路。両端の駅の先も画面の外まで直進する
+    train: {y:0},                  // 桜木町(左) - 関内(右) の線路。両端の駅の先も画面の外まで直進する
     // ロープウェイ(YOKOHAMA AIR CABIN): 緑の乗り場2か所を結ぶケーブルに沿って、2台が逆向きに往復する
-    gondola: { path: [[0,8],[0.8,7.4],[1.6,6.8],[2.4,6.2],[3.2,5.6],[4,5]] },
-    ships: [ {x:10,y:2,len:2,axis:'y'} ],     // 水面の船(黄色2マス。縦向き)
+    gondola: { path: [[10,2],[9.2,2.6],[8.4,3.2],[7.6,3.8],[6.8,4.4],[6,5]] },
+    ships: [ {x:0,y:7,len:2,axis:'y',flip:true} ],     // 水面の船(黄色2マス。縦向き)
     rows: [
-      'WWWWWWWWWWW',
-      'rrrrrrrrrrW',
-      '.rW.r.r..rW',
-      '.rW.r.r..rW',
-      '.rW.rrrrrrW',
-      '.rW.T.r..rW',
-      '.rW.WWrWWrW',
-      '.r....r..r.',
-      'Trrrrrrrrrr',
-      'rr.....r...',
-      'SSSRRRRrSSS'
+      'SSSrRRRRSSS',
+      '...r.....rr',
+      'rrrrrrrrrrT',
+      '.r..r....r.',
+      'WrWWrWW.Wr.',
+      'Wr..r.T.Wr.',
+      'Wrrrrrr.Wr.',
+      'Wr..r.r.Wr.',
+      'Wr..r.r.Wr.',
+      'Wrrrrrrrrrr',
+      'WWWWWWWWWWW'
     ]
   },
   chinatown: {
-    title: 'Yamashita',
+    title: 'Yamashita', short: 'Yamashita',
     previewMix: [.25, .5, .25],    // タイトル画面の絵の建物の割合 [住宅,商業,自然]
     train: null,
     // 門(牌楼): 道路の上に立つ。axis は道路が走る向き (NS=縦に動ける=赤, EW=横に動ける=緑)。col は門柱・梁の色
@@ -432,8 +434,9 @@ function hud(){
   $('passBtn').disabled = hintMode;
   $('hintOk').style.display = hintMode ? 'block' : 'none';
   $('passBtn').classList.toggle('alert', stuck && !over);
-  $('overInfo').innerHTML=`Level <b>${levelOf(bestValue)}</b><br>Score <b>${score.toLocaleString('en-US')}</b>`;
-  $('overPanel').style.display = over && !PREVIEW ? 'flex' : 'none';
+  for(const id of ['undoBtn','hintBtn','passBtn','menuBtn']) $(id).style.display = over && !PREVIEW ? 'none' : '';   // クリア後は、Labels 以外のボタンを消す
+  $('doneBtn').style.display = over && !PREVIEW ? 'block' : 'none';
+  $('msg').classList.toggle('clear', over && !PREVIEW);
   const pct=Math.round((cnt+sites.size)/landTotal*100);          // 埋まり率: 80%超でオレンジ、90%超で赤
   $('fill').parentElement.style.color = pct>90 ? '#ff4d3d' : pct>80 ? '#ff9f1a' : '';
   saveGame();
@@ -451,6 +454,7 @@ function loadGame(){
   try{
     const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
     if(!d || d.grid.length!==N || d.grid[0].length!==N) return false;
+    for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(d.grid[y][x] && terrain[y][x]!==LAND) return false;   // マップの形が変わった古いセーブ(駒が道や水の上)は使わない
     grid=d.grid; kind=d.kind; score=d.score; turns=d.turns; bestValue=d.bestValue; stats=d.stats; gameId=d.gameId||Date.now();
     bestKind = d.bestKind!=null ? d.bestKind : (()=>{ let k=1; for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(d.grid[y][x]===d.bestValue) k=d.kind[y][x]; return k; })();
     fresh.clear(); sites.clear(); const now=performance.now(); for(const st of d.sites) sites.set(siteKey(st.x,st.y),{...st,t0:now});
@@ -544,7 +548,7 @@ function undoNow(){
   fresh.clear(); sites.clear(); for(const st of h.sites) sites.set(siteKey(st.x,st.y),{...st,t0:now});
   anims.clear(); effects=[]; over=false; boardFull=false; stuck=false; sel=null; targets=new Map(); preview=null;
   penalty(UNDO_SITES);                              // Undoのペナルティ
-  hud(); setMsg(`Undone: +${UNDO_SITES} new building`); checkGameOver();
+  hud(); setMsg(`1手戻しました: 新築が${UNDO_SITES}件増えます`); checkGameOver();
 }
 function doMerge(a, b, path){
   fresh.clear();
@@ -598,8 +602,8 @@ function shareScore(done){                            // 今のゲームの成�
   if(prev && lastEntry.s<=prev.s){ if(done) done(); return; }
   const go=()=>{ const n=playerName(); if(n) postScore(n); if(done) done(); };
   const send=()=>{ if(!playerName() && !nameSkipped) askName(go); else go(); };
-  if(prev) askQuery('High Score!',`New best ${lastEntry.s.toLocaleString('en-US')} (was ${prev.s.toLocaleString('en-US')}).
-Update your ${MAPS[MAPID||'yokohama'].title} ranking entry?`,send,()=>{ if(done) done(); });
+  if(prev) askQuery('High Score!',`ハイスコア ${lastEntry.s.toLocaleString('en-US')} 点です(前回 ${prev.s.toLocaleString('en-US')} 点)。
+${MAPS[MAPID||'yokohama'].title} のランキングに再登録しますか?`,send,()=>{ if(done) done(); });
   else send();
 }
 function recordGame(){
@@ -615,8 +619,8 @@ function recordGame(){
 }
 function checkGameOver(){
   if(sites.size) return;                           // 工事中は判定を待つ
-  if(boardFull){ if(!over){ recordGame(); shareScore(); } over=true; stuck=false; hintMode=false; setMsg('Board is full. Game over.'); }
-  else if(!anyMove()){ stuck=true; setMsg(`No moves left. Press Pass to continue (+${PASS_SITES} new buildings).`); }   // 詰み = ゲームオーバーではなくパスできる
+  if(boardFull){ if(!over){ recordGame(); banner('STAGE CLEAR!', `Level ${levelOf(bestValue)} &nbsp;-&nbsp; Score ${score.toLocaleString('en-US')}`, 6500, true); sfxFanfare(true); } over=true; stuck=false; hintMode=false; setMsg(`おめでとうございます! 街が完成しました (レベル ${levelOf(bestValue)} ・ ${score.toLocaleString('en-US')} 点)。右下のボタンでランキングへ。`); }
+  else if(!anyMove()){ stuck=true; setMsg(`つなげる組み合わせがありません。Pass で続けられます(新築が${PASS_SITES}件増えます)。`); }   // 詰み = ゲームオーバーではなくパスできる
   else stuck=false;
   hud();
 }
@@ -716,7 +720,7 @@ function trackScore(pts){
   const added=checkUnlocks(); saveProgress();
   for(const id of added){
     sfxFanfare(true);
-    banner('NEW STAGE!', `${MAPS[id].title} unlocked`, 4200, true);
+    banner('NEW STAGE!', `${MAPS[id].title} が解放されました`, 4200, true);
   }
 }
 // ---- レベルアップ: その建物を画面の中央に大きく映して、派手に表示する ----
@@ -1257,7 +1261,7 @@ function frame(now){
   if(sel){
     // 接続先の候補は、ホバーするまで反応させない(ホバー中の1マスだけ光らせる)
     if(hv && targets.has(hv[1]*N+hv[0]))
-      poly(diamond(hv[0],hv[1],1), `rgba(255,255,100,${.25+.25*pulse})`, '#fff176', 3);
+      poly(diamond(hv[0],hv[1],1), `rgba(255,255,100,${.25+.25*pulse})`);
   }
   // 経路プレビュー
   let hoverPath=null;
@@ -1326,8 +1330,9 @@ function frame(now){
       drawBlock(c[0],c[1],v,k,heightOf(v),lift,isSel);
     }
   }
-  if(sel){                                              // 選んだ駒のセル: もとのオレンジの枠を、セルより少し大きいひし形・接続線と同じくらいの太さで、建物の上・数字の下に描く
-    poly(diamond(sel[0],sel[1],1.12), null, '#ff8a1f', 5);
+  if(sel){                                              // 選んだ駒と、接続先のセル: 黄色の枠を、セルより少し大きいひし形・接続線と同じくらいの太さで、建物の上・数字の下に描く
+    poly(diamond(sel[0],sel[1],1.12), null, '#ffe000', 5);
+    if(hv && targets.has(hv[1]*N+hv[0])) poly(diamond(hv[0],hv[1],1.12), null, '#ffe000', 5);
   }
   if(hoverPath){
     ctx.beginPath();
@@ -1441,6 +1446,7 @@ function frame(now){
     ctx.fillStyle=`rgba(255,255,255,${1-t})`; ctx.strokeStyle=`rgba(0,0,0,${.6*(1-t)})`; ctx.lineWidth=3;
     ctx.strokeText(e.txt,cx,cy-heightOf(8)-20-t*30); ctx.fillText(e.txt,cx,cy-heightOf(8)-20-t*30);
   }
+  if(over && !PREVIEW) drawCelebration(now); else if(FW.on) resetCelebration();      // クリア後: 花火と光の粒
   // 移動アニメ更新
   if(mover){
     const t=Math.min(1,(now-mover.t0)/mover.dur), steps=mover.path.length-1;
@@ -1460,6 +1466,90 @@ function frame(now){
   }
   requestAnimationFrame(frame);
 }
+
+// ---- クリア演出: 大きな花火と、街じゅうに漂う光の粒 ----
+const FW={on:false, rockets:[], sparks:[], flashes:[], next:0, last:0, motes:null};
+function sfxBoom(){                                         // 遠くで、ドン…パチパチ
+  if(!AC||!soundOn) return;
+  const t=AC.currentTime, n=noiseSrc(), f=AC.createBiquadFilter(), g=AC.createGain();
+  f.type='lowpass'; f.frequency.value=480; g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.5,t+.02); g.gain.exponentialRampToValueAtTime(.0001,t+1);
+  n.connect(f); f.connect(g); g.connect(master); if(reverb) g.connect(reverb); n.stop(t+1.1);
+  tone(62,t,.55,'sine',.28);
+  for(let i=0;i<7;i++) tone(1800+Math.random()*3200,t+.3+i*.05+Math.random()*.04,.03,'square',.006);
+}
+let fwSeq=0;                                               // 何発目か(形と色は、順番に決める。ランダムではなく幾何学的に)
+function fwShape(kind){                                    // 形: 中心を0・半径を1とした、点の位置(x,y)と色番号の並び
+  const P=[], TAU=Math.PI*2, poly=(n,r,rot,c,per)=>{ for(let i=0;i<n;i++){ const a0=rot+i/n*TAU, a1=rot+(i+1)/n*TAU;
+    for(let j=0;j<per;j++){ const u=j/per, x=Math.cos(a0)*(1-u)+Math.cos(a1)*u, y=Math.sin(a0)*(1-u)+Math.sin(a1)*u; P.push([x*r,y*r,c]); } } };
+  if(kind==='rings'){ for(const [r,n,c] of [[.38,12,0],[.68,20,1],[1,28,0]]) for(let i=0;i<n;i++){ const a=i/n*TAU; P.push([Math.cos(a)*r,Math.sin(a)*r,c]); } }   // 同心円
+  else if(kind==='round'){ for(const [r,n] of [[.25,6],[.5,12],[.75,18],[1,24]]) for(let i=0;i<n;i++){ const a=i/n*TAU+r; P.push([Math.cos(a)*r,Math.sin(a)*r,0]); } }   // まんまるの菊
+  else { for(let i=0;i<30;i++){ const a=i/30*TAU; P.push([Math.cos(a),Math.sin(a),0]); } }                                                                 // ひとつの輪
+  return P;
+}
+const FW_SHAPES=['round','rings','ring'], FW_COLS=[[355,0],[44,34],[190,320],[130,44],[320,190],[20,130]];   // 形ごとの、色(内側・外側など)の色相
+function fwBurst(cx,cy,R){
+  const kind=FW_SHAPES[fwSeq%FW_SHAPES.length], cols=FW_COLS[fwSeq%FW_COLS.length]; fwSeq++;
+  const k=1.5, rot=fwSeq*.35;
+  for(const [x,y,c] of fwShape(kind)){
+    const cs=Math.cos(rot), sn=Math.sin(rot), px=x*cs-y*sn, py=x*sn+y*cs;                // 形ごとに、少しずつ回して開く
+    FW.sparks.push({x:cx,y:cy,px:cx,py:cy,vx:px*R*k,vy:py*R*k,age:0,life:2.4,h:cols[c%2],l:62,k,g:R*.25,sd:Math.random()*9});     // 同じ速さの割合で広がるので、形が崩れずに大きくなる
+  }
+  FW.flashes.push({x:cx,y:cy,t:0,R:R*.6});
+  sfxBoom();
+}
+function drawCelebration(now){
+  const W=innerWidth, H=innerHeight;
+  const dt=Math.min(.05, FW.last?(now-FW.last)/1000:.016); FW.last=now;
+  if(!FW.on){ FW.on=true; FW.next=.25; }
+  // 街じゅうの光の粒(ワールド座標。盤面の上をゆっくり昇りながら瞬く)
+  if(!FW.motes) FW.motes=Array.from({length:Math.round(N*N*.35)},()=>({u:Math.random()*N,v:Math.random()*N,z:6+Math.random()*110,ph:Math.random()*6.28,f:(1.6+Math.random()*3.4)*.81,s:.6+Math.random()*.8,cy:null,
+    c:Math.random()*4|0}));
+  if(!FW.glow) FW.glow=['255,232,160','255,255,255','150,232,255','255,190,232'].map(c=>{        // 光の粒のグロー(にじむ光の画像を、色ごとに1枚作っておく)
+    const g=document.createElement('canvas'); g.width=g.height=64; const x=g.getContext('2d');       // 正方形の光: 小さい四角を重ねて、四角いにじみにする
+    for(let h=32;h>=4;h-=4){ x.fillStyle=`rgba(${c},${.05+.5*Math.pow(1-h/32,2)})`; x.fillRect(32-h,32-h,h*2,h*2); }
+    x.fillStyle=`rgba(${c},1)`; x.fillRect(26,26,12,12); return g; });
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  for(const m of FW.motes){                                   // その場で瞬くだけ(上には昇らない)。瞬くたびに、場所を変える
+    const ph=now/1000*m.f+m.ph, tw=.5+.5*Math.sin(ph), cy=Math.floor((ph+Math.PI/2)/6.2832);
+    if(cy!==m.cy){ m.cy=cy; m.u=Math.random()*N; m.v=Math.random()*N; m.z=6+Math.random()*110; }
+    if(tw<.04) continue;
+    const [px,py]=proj(m.u,m.v), r=m.s*(.5+.6*tw)*5;
+    ctx.globalAlpha=tw; ctx.drawImage(FW.glow[m.c],px-r,py-m.z-r,r*2,r*2);
+  }
+  ctx.globalAlpha=1;
+  // 花火(画面座標)
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const fdt=dt*.7;                                            // 花火の動きは、3割ゆっくり
+  FW.next-=dt;
+  if(FW.next<=0){                                             // 一定の間隔で、左→右→中央…の順に1発ずつ(以前の半分の頻度)
+    const base=Math.min(W,H*1.15), X=[.3,.7,.5][fwSeq%3], ty=H*.27;
+    FW.rockets.push({x:W*X,y:H+10,ty,vy:-(H-ty)/1.0,R:base*.36,t:0});
+    FW.next=2.7;
+  }
+  for(let i=FW.rockets.length-1;i>=0;i--){
+    const r=FW.rockets[i]; r.t+=fdt; if(r.t<0) continue;
+    r.y+=r.vy*fdt;
+    if(FW.sparks.length<1800 && Math.random()<.35) FW.sparks.push({x:r.x+(Math.random()-.5)*3,y:r.y,px:r.x,py:r.y,vx:(Math.random()-.5)*30,vy:20+Math.random()*30,age:0,life:.5,h:42,l:70,k:1,g:60,sd:Math.random()*9});   // 昇る尾
+    ctx.fillStyle='rgba(255,236,170,.95)'; ctx.fillRect(Math.round(r.x)-2,Math.round(r.y),5,5);
+    if(r.y<=r.ty){ fwBurst(r.x,r.y,r.R); FW.rockets.splice(i,1); }
+  }
+  for(let i=FW.flashes.length-1;i>=0;i--){                      // 開いた瞬間の白い閃光
+    const f=FW.flashes[i]; f.t+=fdt; const u=f.t/.35; if(u>=1){ FW.flashes.splice(i,1); continue; }
+    const g=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,f.R*(.3+u*.5)); g.addColorStop(0,`rgba(255,250,225,${.75*(1-u)})`); g.addColorStop(1,'rgba(255,230,160,0)');
+    ctx.fillStyle=g; ctx.fillRect(f.x-f.R,f.y-f.R,f.R*2,f.R*2);
+  }
+  for(let i=FW.sparks.length-1;i>=0;i--){
+    const p=FW.sparks[i]; p.age+=fdt; const u=p.age/p.life; if(u>=1){ FW.sparks.splice(i,1); continue; }
+    p.px=p.x; p.py=p.y;
+    const d=Math.exp(-p.k*fdt); p.vx*=d; p.vy=p.vy*d+p.g*fdt; p.x+=p.vx*fdt; p.y+=p.vy*fdt;
+    let a=Math.pow(1-u,1.3); if(u>.55) a*=.55+.45*Math.sin(p.age*38+p.sd);       // 消える前にチカチカ
+    ctx.fillStyle=`hsla(${p.h},100%,${p.l+(u<.12?25:0)}%,${a})`;                       // 小さな四角のドット
+    const q=Math.max(7,Math.round(Math.min(W,H)/72)); ctx.fillRect(Math.round(p.x/q)*q,Math.round(p.y/q)*q,q,q);
+  }
+  ctx.restore();
+  ctx.setTransform(dpr*view.s,0,0,dpr*view.s,dpr*view.tx,dpr*view.ty);
+}
+function resetCelebration(){ FW.on=false; FW.rockets.length=0; FW.sparks.length=0; FW.flashes.length=0; FW.last=0; }
 
 // ================= 効果音 (WebAudioで合成。素材ファイルなし) =================
 let AC=null, master=null, reverb=null, soundOn=true, noiseBuf=null, clackT=0;
@@ -1586,19 +1676,19 @@ function clickAt(e){
   if(!touch) preview=null;
   if(!sel){
     sel=[x,y]; targets=targetsOf(x,y); preview=null;      // 接続先がなくても選択はできる
-    if(!targets.size) setMsg('No piece can connect to this one right now');
+    if(!targets.size) setMsg('今、この駒につなげられる相手はいません');
     return;
   }
   if(sel[0]===x && sel[1]===y){ deselect(); return; }   // 選択中の駒をもう一度 = キャンセル
   if(targets.has(k)){
     if(touch && !(preview && preview[0]===x && preview[1]===y)){   // タッチ: 1回目は経路プレビュー
-      preview=[x,y]; setMsg('Tap again to merge'); return;
+      preview=[x,y]; setMsg('もう一度タップで合体します'); return;
     }
     const path=targets.get(k); preview=null; doMerge(sel,[x,y],path); return;
   }
   preview=null;                                    // 接続先でない駒: 選択は保ったまま知らせる
   sfxError();
-  setMsg('Not a match. Tap the selected piece to cancel, or pick a matching one.');
+  setMsg('つなげられません。選択中の駒をもう一度押すと取り消し、同じ駒を選ぶとつながります。');
 }
 const ptrs=new Map(); let press=null;
 cv.addEventListener('contextmenu', e => e.preventDefault());
@@ -1663,10 +1753,16 @@ $('menuPanel').onclick = e => { if(e.target===$('menuPanel')) closeMenu(); };
 $('newBtn').onclick = () => { closeMenu(); $('confirmPanel').style.display='flex'; };
 $('queryNo').onclick = () => { $('queryPanel').style.display='none'; queryYes=null; const f=queryNoCb; queryNoCb=null; if(f) f(); };
 $('queryYes').onclick = () => { $('queryPanel').style.display='none'; const f=queryYes; queryYes=null; queryNoCb=null; if(f) f(); };
-$('overBack').onclick = () => {                         // ゲームオーバー: スタートメニューへ戻るだけ(保存は消す。ランキングは登録済み)
-  try{ localStorage.removeItem(SAVE_KEY); }catch(_){}
-  window.removeEventListener('pagehide', saveGame); saveOff=true;
-  location.href = location.pathname;
+$('doneBtn').onclick = () => {                           // クリア後: 名前が未登録なら聞いて、ハイスコアなら共有してから、そのステージのランキングへ
+  $('doneBtn').disabled=true;
+  recordGame();
+  const posted=()=>{ const wait=(LB_URL && lastEntry && playerName()) ? 1000 : 0;       // 送信が済むのを少し待つ(すぐ読み込むと、自分の記録が出ない)
+    setTimeout(()=>{
+      try{ localStorage.removeItem(SAVE_KEY); }catch(_){}
+      window.removeEventListener('pagehide', saveGame); saveOff=true;
+      location.href = location.pathname+'?rank='+(MAPID||'yokohama');
+    }, wait); };
+  shareScore(posted);
 };
 $('newNo').onclick = () => { $('confirmPanel').style.display='none'; };
 $('newYes').onclick = () => {                         // 今のステージの保存を消して、ステージ選択へ戻る(ギブアップもランキングに登録・共有)
@@ -1694,42 +1790,54 @@ async function loadGlobal(id){                         // みんなの上位(キ
   const rows=await r.json(); lbCache[id]={t:Date.now(),rows}; return rows;
 }
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function showRank(id){                                  // 1ステージ分の、1〜10位の表
-  rankStage=id; const my=++rankToken;
-  for(const b of $('rankTabs').children) b.classList.toggle('on', b.dataset.id===id);
-  const online = !!LB_URL;
-  $('rankMode').style.display = online ? 'flex' : 'none';
-  $('rankNameRow').style.display = online ? 'flex' : 'none';
-  $('rankNameText').textContent = playerName() || '(not set)';
-  for(const b of $('rankMode').children) b.classList.toggle('on', b.dataset.m===rankMode);
-  const empty=(n,cols)=>Array.from({length:n},(_,i)=>`<tr class="empty"><td>${i+1}</td>${'<td>-</td>'.repeat(cols)}</tr>`).join('');
-  if(online && rankMode==='all'){
-    $('rankBody').innerHTML='<table><tr><td style="text-align:center;opacity:.7">Loading...</td></tr></table>';
-    loadGlobal(id).then(rows=>{
-      if(my!==rankToken) return;
+const rankIds = () => Object.keys(MAPS).filter(isUnlocked);       // 未開放のステージは出さない
+const rankWide = () => rankIds().length>1 && innerWidth>=rankIds().length*400+120;      // 全ステージが横に収まる幅(1ステージ約400px)のときだけ並べる。入らなければ、タブで1つずつ
+function rankTable(id){                                  // 1ステージ分の、1〜10位の表(HTMLを返す)
+  const msg=t=>`<table><tr><td style="text-align:center;opacity:.7">${t}</td></tr></table>`;
+  if(LB_URL && rankMode==='all'){
+    return loadGlobal(id).then(rows=>{
       let h=''; for(let i=0;i<RANK_MAX;i++){ const e=rows[i]; h += e ? `<tr><td>${i+1}</td><td class="nm">${esc(e.name)}</td><td>${e.level}</td><td>${Number(e.score).toLocaleString('en-US')}</td></tr>` : `<tr class="empty"><td>${i+1}</td><td class="nm">-</td><td>-</td><td>-</td></tr>`; }
-      $('rankBody').innerHTML=`<table><tr><th>#</th><th class="nm">Name</th><th>Level</th><th>Score</th></tr>${h}</table>`;
-    }).catch(()=>{ if(my===rankToken) $('rankBody').innerHTML='<table><tr><td style="text-align:center;opacity:.7">Could not load the ranking.<br>Showing nothing right now.</td></tr></table>'; });
-    return;
+      return `<table><tr><th>#</th><th class="nm">Name</th><th>Level</th><th>Score</th></tr>${h}</table>`;
+    }).catch(()=>msg('ランキングを読み込めませんでした。<br>しばらくしてからもう一度お試しください。'));
   }
-  const R=loadRank(), list=R[id]||[];
+  const list=loadRank()[id]||[];
   let rows='';
   for(let i=0;i<RANK_MAX;i++){
     const e=list[i];
     rows += e ? `<tr><td>${i+1}</td><td>${e.lv}</td><td>${e.s.toLocaleString('en-US')}</td></tr>` : `<tr class="empty"><td>${i+1}</td><td>-</td><td>-</td></tr>`;
   }
-  $('rankBody').innerHTML=`<table><tr><th>#</th><th>Level</th><th>Score</th></tr>${rows}</table>`;
+  return Promise.resolve(`<table><tr><th>#</th><th>Level</th><th>Score</th></tr>${rows}</table>`);
+}
+function showRank(id){                                  // 狭い画面: 選んだ1ステージ / 広い画面: 全ステージ
+  rankStage=id; const my=++rankToken, wide=rankWide();
+  for(const b of $('rankTabs').children) b.classList.toggle('on', b.dataset.id===id);
+  $('rankTabs').style.display = (!wide && rankIds().length>1) ? 'flex' : 'none';
+  const online = !!LB_URL;
+  $('rankMode').style.display = online ? 'flex' : 'none';
+  $('rankNameRow').style.display = online ? 'flex' : 'none';
+  $('rankNameText').textContent = playerName() || '(not set)';
+  for(const b of $('rankMode').children) b.classList.toggle('on', b.dataset.m===rankMode);
+  $('rankPanel').classList.toggle('wide', wide);
+  const ids = wide ? rankIds() : [id];
+  if(LB_URL && rankMode==='all') $('rankBody').innerHTML='<table><tr><td style="text-align:center;opacity:.7">読み込み中...</td></tr></table>';
+  Promise.all(ids.map(rankTable)).then(tabs=>{
+    if(my!==rankToken) return;
+    $('rankBody').innerHTML = wide ? ids.map((sid,i)=>`<div class="rankCol"><h4>${MAPS[sid].title}</h4>${tabs[i]}</div>`).join('') : tabs[0];
+  });
 }
 function refreshRank(){ showRank(rankStage); }
+addEventListener('resize', () => { if($('rankPanel').style.display==='flex') refreshRank(); });   // 窓の幅が変わったら、並べ方も切り替える
 $('rankMode').onclick = e => { const b=e.target.closest('button'); if(!b) return; rankMode=b.dataset.m; refreshRank(); };
 $('rankNameBtn').onclick = () => askName(null);
 $('titleRank').onclick = () => {
-  const ids=Object.keys(MAPS).filter(isUnlocked);       // 未開放のステージは出さない
+  const ids=rankIds();
   $('rankTabs').innerHTML='';
-  for(const id of ids){ const b=document.createElement('button'); b.className='sub'; b.dataset.id=id; b.textContent=MAPS[id].title; b.onclick=()=>showRank(id); $('rankTabs').appendChild(b); }
-  $('rankTabs').style.display = ids.length>1 ? 'flex' : 'none';
-  showRank(ids[0]); $('rankPanel').style.display='flex';
+  for(const id of ids){ const b=document.createElement('button'); b.className='sub'; b.dataset.id=id; b.textContent=(innerWidth<700||innerHeight<500)?MAPS[id].short:MAPS[id].title; b.onclick=()=>showRank(id); $('rankTabs').appendChild(b); }
+  const first=(ids.includes(rankFirst)?rankFirst:ids[0]); rankFirst=null;
+  showRank(first); $('rankPanel').style.display='flex';
 };
+let rankFirst=new URLSearchParams(location.search).get('rank');      // ?rank=<ステージ>: クリア後、そのステージのランキングを開いた状態でタイトルへ
+if(rankFirst && !(MAPID && MAPS[MAPID])) setTimeout(()=>$('titleRank').click(),0);
 $('rankClose').onclick = () => { $('rankPanel').style.display='none'; };
 $('rankPanel').onclick = e => { if(e.target===$('rankPanel')) $('rankPanel').style.display='none'; };
 $('manualClose').onclick = () => { $('manualPanel').style.display='none'; };
@@ -1776,7 +1884,7 @@ let queryYes=null, queryNoCb=null;
 function askQuery(title,msg,ok,no){ $('queryTitle').textContent=title; $('queryMsg').textContent=msg; queryYes=ok; queryNoCb=no||null; $('queryPanel').style.display='flex'; }
 function askGameOver(what,ok){
   $('queryTitle').textContent='Game Over?'; queryNoCb=null;
-  $('queryMsg').textContent=`${what} makes the board full. The game will be over. Continue?`;
+  $('queryMsg').textContent=`${what}をすると盤面がいっぱいになり、ゲームオーバーになります。続けますか?`;
   queryYes=ok; $('queryPanel').style.display='flex';
 }
 function doPass(){
@@ -1788,20 +1896,20 @@ function doPassNow(){
   fresh.clear(); undoStack.push(snapshot()); if(undoStack.length>200) undoStack.shift();
   deselect(); turns++; stuck=false;
   penalty(PASS_SITES);
-  hud(); setMsg(`Passed: +${PASS_SITES} new buildings`);
+  hud(); setMsg(`パスしました: 新築が${PASS_SITES}件増えます`);
   checkGameOver();
 }
 $('passBtn').onclick = doPass;
 $('hintBtn').onclick = () => {
   if(mover||over||hintMode) return;
-  const m=anyMove(); if(!m){ setMsg('No moves available. Use Pass.'); return; }
+  const m=anyMove(); if(!m){ setMsg('つなげる組み合わせがありません。Pass を使ってください。'); return; }
   const doHint=()=>{
     const t=targetsOf(m[0],m[1]), first=[...t.keys()][0], path=t.get(first);
     const avoid=new Set(path.map(p=>p[1]*N+p[0])); avoid.add(first); avoid.add(m[1]*N+m[0]);   // ヒントの経路と2つの駒には、新築を置かない
     penalty(HINT_SITES,avoid);                       // ヒントのペナルティ
     sel=m; targets=t; preview=[first%N, first/N|0];  // 駒と、つなぐ相手を表示
     hintMode=true;
-    hud(); setMsg(`Hint: +${HINT_SITES} new buildings. Press OK to continue.`);
+    hud(); setMsg(`ヒント: 新築が${HINT_SITES}件増えます。OK を押して続けます。`);
   };
   if(freeCount(grid,[...sites.values()])<HINT_SITES) askGameOver('Hint',doHint); else doHint();
 };
