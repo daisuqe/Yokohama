@@ -296,11 +296,11 @@ const LV_PROB = [.45,.35,.20]; // 新築が1,2,3段階目になる確率       /
 const BUILD_MS = 1000;        // 新築の工事時間(柵で囲う)
 // 駒の種類 (同じ種類・同じ数字だけ合体できる)
 const KINDS = [
-  {name:'Residential',          top:'#6f9fd6', num:'#ffffff', ink:'#0a2f66', numC:'#4388ff', icon:'house', tint:'#2f7bff', tintA:.49, gamma:.1,   // 青の濃さ(以前の0.7の7割)
+  {name:'Residential',          top:'#6f9fd6', num:'#ffffff', ink:'#0a2f66', numC:'#3a7fff', icon:'house', tint:'#2f7bff', tintA:.49, gamma:.1,   // 青の濃さ(以前の0.7の7割)
    tiers:['Tent','Hut','Log Cabin','Bungalow','Two-Story House','Three-Story House','Mansion','Apartment','Low-Rise Condo','Mid-Rise Condo','Tower Condo']},
   {name:'Shops & Fun', top:'#d9736f', num:'#ffffff', ink:'#6b0d0d', numC:'#ff1a1a', icon:'shop', tint:'#ff3b30', tintA:.22,
    tiers:['Food Stall','Kiosk','Shop','Convenience Store','Cafe & Diner','Drugstore','Game Center','Supermarket','Cinema','Shopping Mall','Department Store']},
-  {name:'Nature & Parks',      top:'#6fbf86', num:'#ffffff', ink:'#0b4a1c', numC:'#00b52b', icon:'tree', tint:'#7ee02e', tintA:.4,
+  {name:'Nature & Parks',      top:'#6fbf86', num:'#ffffff', ink:'#0b4a1c', numC:'#16cf2a', icon:'tree', tint:'#7ee02e', tintA:.4,
    tiers:['Lawn','Bush','Hedge','Azalea','Small Tree','Flower Bed','Flower Bed & Bench','Tree','Small Park','Park','Grand Park']
   },
 ];
@@ -763,7 +763,7 @@ function drawNum(v,k,cx,cy){
   const s=String(v);
   ctx.font=`900 ${s.length<=2?24:s.length==3?20:17}px sans-serif`;
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.lineJoin='round'; ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.strokeText(s,cx,cy);
+  ctx.lineJoin='round'; ctx.lineWidth=3.5; ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.strokeText(s,cx,cy);
   ctx.fillStyle=KINDS[k].numC; ctx.fillText(s,cx,cy);
 }
 let glowAmt=0;                                      // 描画中の建物の発光量(0〜1)
@@ -789,7 +789,6 @@ function drawSprite(x,y,v,k,grow,lift,selected,im){
     ctx.shadowBlur=0; ctx.globalAlpha=gl*.7; ctx.drawImage(sil, dx, dy, sz, hgt);
     ctx.restore();
   }
-  if(selected) poly(diamond(x,y,.95),null,'#ff6f00',3);
 }
 function drawBlock(x,y,v,k,h,lift,selected){
   const im = kindImg(k,v);
@@ -800,7 +799,7 @@ function drawBlock(x,y,v,k,h,lift,selected){
   poly(diamond(x,y,.84).map(p=>[p[0]+4,p[1]+2+lift*.3]), 'rgba(0,0,0,.18)');
   poly([[cx-hw,y0],[cx,y0+hh],[cx,y1+hh],[cx-hw,y1]], shade(col,.82), 'rgba(0,0,0,.3)', 1);
   poly([[cx+hw,y0],[cx,y0+hh],[cx,y1+hh],[cx+hw,y1]], shade(col,.64), 'rgba(0,0,0,.3)', 1);
-  poly([[cx,y1-hh],[cx+hw,y1],[cx,y1+hh],[cx-hw,y1]], shade(col,1.1), selected?'#ff6f00':'rgba(0,0,0,.45)', selected?3:1.2);
+  poly([[cx,y1-hh],[cx+hw,y1],[cx,y1+hh],[cx-hw,y1]], shade(col,1.1), 'rgba(0,0,0,.45)', 1.2);
   // 窓 (高いほど増える)
   const rows=Math.min(5, Math.max(0,((h-10)/9)|0));
   for(let r=0;r<rows;r++){
@@ -1256,7 +1255,6 @@ function frame(now){
   // 移動可能先ハイライト
   const pulse=.5+.5*Math.sin(now/200);
   if(sel){
-    poly(diamond(sel[0],sel[1],1), 'rgba(255,111,0,.35)', '#ff6f00', 2.5);
     // 接続先の候補は、ホバーするまで反応させない(ホバー中の1マスだけ光らせる)
     if(hv && targets.has(hv[1]*N+hv[0]))
       poly(diamond(hv[0],hv[1],1), `rgba(255,255,100,${.25+.25*pulse})`, '#fff176', 3);
@@ -1328,16 +1326,18 @@ function frame(now){
       drawBlock(c[0],c[1],v,k,heightOf(v),lift,isSel);
     }
   }
-  if(showInfo) for(const n of nums){
-    if(hintMode && sel && preview && !((n[4]===sel[0]&&n[5]===sel[1])||(n[4]===preview[0]&&n[5]===preview[1]))) continue;   // ヒント中は2つの駒の数字だけ
-    drawNum(n[0],n[1],n[2],n[3]);
+  if(sel){                                              // 選んだ駒のセル: もとのオレンジの枠を、セルより少し大きいひし形・接続線と同じくらいの太さで、建物の上・数字の下に描く
+    poly(diamond(sel[0],sel[1],1.12), null, '#ff8a1f', 5);
   }
   if(hoverPath){
     ctx.beginPath();
     hoverPath.forEach((p,i)=>{ const [cx,cy]=center(p[0],p[1]); i?ctx.lineTo(cx,cy):ctx.moveTo(cx,cy); });
     ctx.lineJoin='round'; ctx.lineCap='round';
-    ctx.strokeStyle='rgba(110,64,0,.55)'; ctx.lineWidth=8; ctx.stroke();         // 経路プレビュー: 金色の線(下に濃い縁取りを敷いて見やすく)
-    ctx.strokeStyle='rgba(255,212,84,.95)'; ctx.lineWidth=5; ctx.stroke();
+    ctx.strokeStyle='#ff0000'; ctx.lineWidth=5; ctx.stroke();      // 経路プレビュー: 真っ赤な線(縁取りなし)
+  }
+  if(showInfo) for(const n of nums){
+    if(hintMode && sel && preview && !((n[4]===sel[0]&&n[5]===sel[1])||(n[4]===preview[0]&&n[5]===preview[1]))) continue;   // ヒント中は2つの駒の数字だけ
+    drawNum(n[0],n[1],n[2],n[3]);
   }
   drawLabels();
   // エフェクト
