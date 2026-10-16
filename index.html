@@ -565,7 +565,7 @@ function doMerge(a, b, path){
 const sites = new Map();
 const fresh = new Set();                           // 工事直後で、次のターンまで柵を残すマス
 const siteKey = (x,y) => y*N+x;
-function startSite(k,avoid){                          // avoid: 新築を置かないマス(ヒントの経路など)のキーの集合
+function startSite(k,avoid,quiet){                          // avoid: 新築を置かないマス(ヒントの経路など)のキーの集合
   let empt=[];
   for(let y=0;y<N;y++) for(let x=0;x<N;x++)
     if(!grid[y][x] && terrain[y][x]===LAND && !sites.has(siteKey(x,y))) empt.push([x,y]);
@@ -574,7 +574,7 @@ function startSite(k,avoid){                          // avoid: 新築を置か�
   const [x,y]=empt[Math.random()*empt.length|0];
   const v = randVal();
   sites.set(siteKey(x,y), {x,y,k,v,t0:performance.now()});
-  sfxHammer();
+  if(!quiet) sfxHammer();
   return true;
 }
 const RANK_KEY = 'yokohama-ranking', RANK_MAX = 10;
@@ -677,9 +677,10 @@ function finishMove(){
   const lvBefore=levelOf(bestValue);
   turns++; if(nv>bestValue) bestKind=k; bestValue=Math.max(bestValue,nv); score += pts; stats.pts[k]+=pts; stats.merges[k][tierOf(nv)]++;
   trackScore(pts);
-  if(levelOf(bestValue)>lvBefore) levelUp(b[0],b[1],levelOf(bestValue),k,nv);
+  const lvUp = levelOf(bestValue)>lvBefore;           // レベルアップ中は、工事音(カンカンカン)を鳴らさない
+  if(lvUp) levelUp(b[0],b[1],levelOf(bestValue),k,nv);
   clearLow(nv,b); sfxMerge(tierOf(nv));
-  startSite(randKind());   // 新築は1件。種類は、直前に合体した種類とは無関係にランダム(住宅・商業・自然が同じ確率)
+  startSite(randKind(), null, lvUp);   // 新築は1件。種類は、直前に合体した種類とは無関係にランダム(住宅・商業・自然が同じ確率)
   hud();
   setMsg(`${KINDS[k].name}: ${nameOf(k,nv)}  +${pts.toLocaleString('en-US')}` );
   checkGameOver();
@@ -1617,14 +1618,15 @@ let hammerT=0;
 function sfxHammer(){
   if(!AC||!soundOn) return;
   const now=performance.now(); if(now-hammerT<500) return; hammerT=now;
-  const t=AC.currentTime, dst=AC.createGain(); dst.gain.value=.2; dst.connect(master); if(reverb) dst.connect(reverb);
-  const f0=680;
+  const t=AC.currentTime, dst=AC.createGain(); dst.gain.value=.2; dst.connect(master);
+  if(reverb){ const send=AC.createGain(); send.gain.value=3; dst.connect(send); send.connect(reverb); }         // 響き: 残響へ、多めに送る
+  const f0=400;
   for(let i=0;i<3;i++){
     const at=t+.8+i*.4;                                                                           // 3回とも、まったく同じ音
     // 鉄の、重くて硬い響き: 低めの基音(三角波)と、ずれた倍音を、短めに伸ばす + 叩いた瞬間の、鈍い「ゴン」
-    for(const [m,vol,dec,ty] of [[1,.07,.38,'triangle'],[2.32,.035,.22,'sine'],[4.1,.02,.12,'sine'],[6.7,.01,.07,'sine'],[.34,.06,.07,'triangle']]){
+    for(const [m,vol,dec,ty] of [[1,.07,.38,'triangle'],[2.32,.035,.22,'sine'],[4.1,.02,.12,'sine'],[6.7,.01,.07,'sine'],[.34,.02,.07,'triangle']]){
       const o=AC.createOscillator(), g=AC.createGain(); o.type=ty; o.frequency.value=f0*m;
-      g.gain.setValueAtTime(.0001,at); g.gain.exponentialRampToValueAtTime(vol,at+.002); g.gain.exponentialRampToValueAtTime(.0001,at+dec);
+      g.gain.setValueAtTime(.0001,at); g.gain.exponentialRampToValueAtTime(vol,at+.006); g.gain.exponentialRampToValueAtTime(.0001,at+dec);
       o.connect(g); g.connect(dst); o.start(at); o.stop(at+dec+.05);
     }
   }
