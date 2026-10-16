@@ -16,7 +16,7 @@
     text-shadow:0 1px 3px rgba(0,0,0,.75),0 0 2px rgba(0,0,0,.6)}
   #hud button{text-shadow:0 1px 2px rgba(0,45,70,.55)}
   #hud button{background:#2fb4ea} #hud button.sub{background:#6fcdf0}     /* ゲーム中の上のボタン: 水色寄りで爽やかに */
-  #hud button.toggle.on{background:#9be32e} #hud button.toggle:not(.on){background:#bddc8f;opacity:.9}     /* Labels: 黄緑 */      /* 明るいボタンでも文字が読めるよう、細い影を付ける */
+  #hud button.toggle.on{background:#6bdc2a} #hud button.toggle:not(.on){background:#b4d99a;opacity:.9}     /* Labels: 黄緑 */      /* 明るいボタンでも文字が読めるよう、細い影を付ける */
   #hud b{font-size:32px;margin-left:10px}
   #scoreBox b,#levelBox b{font-size:60px;line-height:1;margin-left:10px;letter-spacing:.01em;text-shadow:0 2px 6px rgba(0,0,0,.45)}
   #hud .sp{flex:1}
@@ -29,6 +29,7 @@
   #menuPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:6}
   #menuBox{background:#1d2c35;border-radius:12px;padding:24px 28px;min-width:340px;display:flex;flex-direction:column;gap:16px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
   #menuBox{max-height:92vh;overflow:auto}
+  .volRow{display:flex;align-items:center;gap:14px;font-size:26px} .volRow label{width:92px} .volRow input{flex:1;min-width:120px;height:40px;accent-color:#2fb4ea} .volRow span{width:70px;text-align:right}   /* 音量スライダー(0でオフ) */
   #confirmPanel,#queryPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:40}
   #doneBtn{position:fixed;right:max(14px,env(safe-area-inset-right));bottom:max(44px,calc(env(safe-area-inset-bottom) + 34px));display:none;z-index:6;background:#2fb4ea}   /* クリア後: 右下の、ランキングへ進むボタン(上のボタンと同じ普通の見た目) */
   #msg.clear{font-weight:800;color:#fff7c2;text-shadow:0 2px 6px rgba(120,60,0,.85)}
@@ -38,8 +39,9 @@
   #help{font-size:17px;line-height:1.55;max-width:560px} #help h4{margin:4px 0 6px;font-size:22px} #help ul{margin:0;padding-left:1.2em} #help li{margin-bottom:6px}
   #menuBox button{font-size:30px;padding:16px 24px;min-height:68px;border-radius:10px}
   button:disabled{opacity:.35;cursor:default;filter:none}
-  #passBtn.alert{background:#e65100;animation:passGlow 3.2s ease-in-out infinite}
-  @keyframes passGlow{0%,100%{filter:brightness(.55);box-shadow:0 0 0 0 rgba(255,160,60,0)}50%{filter:brightness(1.4);box-shadow:0 0 16px 6px rgba(255,160,60,.7)}}
+  #passBtn.alert{background:#ff8a00;color:#fff;animation:passGlow 1s ease-in-out infinite}      /* Pass しか押せないとき: はっきりしたオレンジで点滅 */
+  #hud #passBtn.alert{background:#ff8a00}
+  @keyframes passGlow{0%,100%{background:#ff7a00;box-shadow:0 0 0 0 rgba(255,150,0,0)}50%{background:#ffb02e;box-shadow:0 0 18px 7px rgba(255,150,0,.85)}}
   #stageSel{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:16px;overflow:auto;
     background:linear-gradient(180deg,#addbfb 0%,#8eccf6 50%,#7dc3f2 100%)}
   #stageSel h2{margin:0;font-size:72px;letter-spacing:.08em;font-weight:900;color:#fff;text-shadow:0 3px 10px rgba(10,30,50,.65)}
@@ -65,6 +67,9 @@
   #manualPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:30}
   #manualBody{font-size:17px;line-height:1.55;max-width:560px}
   #manualBody h4{margin:4px 0 6px;font-size:22px} #manualBody ul{margin:0;padding-left:1.2em} #manualBody li{margin-bottom:6px}
+  #stageWrap{position:relative;width:100%}
+  .stageArrow{position:absolute;z-index:3;display:none;background:none;border:0;color:#fff;font-size:44px;line-height:1;padding:6px 10px;min-height:0;text-shadow:0 2px 8px rgba(10,30,50,.75);cursor:pointer} .stageArrow:hover{filter:none;transform:scale(1.15)}
+  #stageL{left:6px} #stageR{right:6px}
   #stageList{display:flex;flex-wrap:nowrap;gap:24px;justify-content:flex-start;width:100%;box-sizing:border-box;padding:8px 24px;overflow-x:auto;scrollbar-width:none;cursor:grab;touch-action:pan-x;-webkit-overflow-scrolling:touch}
   #stageList::-webkit-scrollbar{display:none} #stageList.drag{cursor:grabbing} #stageList>:first-child{margin-left:auto} #stageList>:last-child{margin-right:auto}   /* 少ないときは中央、はみ出すときは左端から横スクロール */
   .stageCard{background:none;border-radius:14px;padding:14px 16px;width:315px;flex:0 0 auto;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;
@@ -153,7 +158,8 @@
 <div id="panel"><div id="panelBox"><div id="panelBody"></div><button id="panelClose">Close</button></div></div>
 <div id="menuPanel"><div id="menuBox"><h3>Menu</h3><button id="newBtn">New Game</button>
   <button class="sub" id="stageBtn">Title</button>
-  <button class="sub toggle on" id="soundBtn">Sound: ON</button>
+  <div class="volRow"><label for="sfxVol">SFX</label><input type="range" id="sfxVol" min="0" max="100" step="5" value="50"><span id="sfxVolV">50%</span></div>
+  <div class="volRow"><label for="musicVol">Music</label><input type="range" id="musicVol" min="0" max="100" step="5" value="50"><span id="musicVolV">50%</span></div>
   <button class="sub" id="manualBtn">How to Play</button>
   <div id="help" style="display:none"><h4>遊び方</h4><ul>
     <li>同じ種類・同じ数字の建物をつなぐと、1つ上のレベルになります。</li>
@@ -170,7 +176,7 @@
 <div id="queryPanel"><div id="menuBox"><h3 id="queryTitle">Game Over?</h3><div id="queryMsg"></div>
   <button id="queryYes">Yes</button><button class="sub" id="queryNo">No</button></div></div>
 <button id="doneBtn">Ranking &#9654;</button>
-<div id="stageSel"><h2>Yokohama</h2><div id="stageList"></div><div id="titleBtns"><button id="titleRank">Ranking</button><button id="titleManual">How to Play</button></div></div>
+<div id="stageSel"><h2>Yokohama</h2><div id="stageWrap"><button id="stageL" class="stageArrow">&#9664;</button><div id="stageList"></div><button id="stageR" class="stageArrow">&#9654;</button></div><div id="titleBtns"><button id="titleRank">Ranking</button><button id="titleManual">How to Play</button></div></div>
 <div id="rankPanel"><div id="menuBox"><h3>Ranking</h3><div id="rankTabs"></div>
   <div id="rankMode"><button class="sub on" data-m="all">Global</button><button class="sub" data-m="me">Local</button></div>
   <div id="rankBody"></div>
@@ -195,6 +201,7 @@ const MAPS = {
     title: 'Yokohama Station', short: 'Station',
     previewMix: [.25, .5, .25],    // タイトル画面の絵の建物の割合 [住宅,商業,自然]
     railStyle: 'keikyu',           // 電車・駅の色 (keikyu: 京急 / jr: JR京浜東北線)
+    boat: { path: [[2.5,10.5],[2.5,3.5],[10.5,3.5],[10.5,10.5]] },   // 小さなボート: 左下の池 → 左の運河を上へ → 上の運河を右へ → 右の運河を下へ(コの字)。道・橋の下は、くぐる
     train: {y:0},                  // 電車が走る線路 ({x:列} なら縦に、{y:行} なら横に走る。無ければ null)
     rows: [
   'rRRSSSSRRRR',
@@ -217,7 +224,8 @@ const MAPS = {
     train: {y:0},                  // 桜木町(左) - 関内(右) の線路。両端の駅の先も画面の外まで直進する
     // ロープウェイ(YOKOHAMA AIR CABIN): 緑の乗り場2か所を結ぶケーブルに沿って、2台が逆向きに往復する
     gondola: { path: [[10,2],[9.2,2.6],[8.4,3.2],[7.6,3.8],[6.8,4.4],[6,5]] },
-    ships: [ {x:0,y:7,len:2,axis:'y',flip:true} ],     // 水面の船(黄色2マス。縦向き)
+    boat: { path: [[0.2,10.5],[10.8,10.5]], fade: 1.5 },   // 小さなボート: 左下の海の1行(一番下の行)を行き来。盤面の端に近づくと、すっと消える
+    ships: [ {x:0,y:7,len:2,axis:'y'} ],     // 水面の船(黄色2マス。縦向き)
     rows: [
       'SSSrRRRRSSS',
       '...r.....rr',
@@ -247,6 +255,7 @@ const MAPS = {
       {x:2,y:9,axis:'NS', name:'天長門', col:'#e8b923', roof:'#c8232c'},
       {x:6,y:9,axis:'NS', name:'玄武門', col:'#2b2b30', roof:'#c8232c'},
     ],
+    boat: { path: [[10.5,26],[10.5,4.5],[28,4.5]] },   // 小さなボート: 左下の画面外から、右の運河を右上へ → 道(3行目)に突き当たる手前で右へ曲がり、画面の外へ。そこから、同じ道を戻る
     ships: [ {x:8,y:0,len:2,axis:'y',flip:true} ],     // 水面の船(黄色2マス)。flip: 向きを逆にする
     rows: [
       'WWWWWWWWWWW',
@@ -327,6 +336,7 @@ let bestValue = 1;       // ゲーム中に作った最大の建物の数字
 let bestKind = 1;        // その建物の種類(ランキングの絵に使う)
 let gameId = Date.now(); // 1ゲームごとのID(ランキングの登録を、同じゲームで重複させない)
 let turns = 0;           // 合体した回数
+let passLockUntil = 0;   // Pass をした後、この時刻(performance.now)までは Pass を押せない
 let stuck = false;       // 合体できる組み合わせがない(パスできる)
 let boardFull = false;  // 新築を置く更地がなくなった(= ゲームオーバー待ち)
 let preview = null;     // タッチ操作で「1回タップした接続先」(もう一度タップで合体)
@@ -431,9 +441,10 @@ function hud(){
   $('fill').textContent = Math.round((cnt+sites.size)/landTotal*100)+'%';   // 駒 + 工事中の更地
   $('undoBtn').disabled = !undoStack.length || !!mover || hintMode;
   $('hintBtn').disabled = (stuck && !sites.size) || over || hintMode;
-  $('passBtn').disabled = hintMode;
+  const passLocked = performance.now()<passLockUntil;
+  $('passBtn').disabled = hintMode || passLocked;
   $('hintOk').style.display = hintMode ? 'block' : 'none';
-  $('passBtn').classList.toggle('alert', stuck && !over);
+  $('passBtn').classList.toggle('alert', stuck && !over && !passLocked);
   for(const id of ['undoBtn','hintBtn','passBtn','menuBtn']) $(id).style.display = over && !PREVIEW ? 'none' : '';   // クリア後は、Labels 以外のボタンを消す
   $('doneBtn').style.display = over && !PREVIEW ? 'block' : 'none';
   $('msg').classList.toggle('clear', over && !PREVIEW);
@@ -1219,6 +1230,62 @@ function trainCoverItems(items){
     if(t===ROAD || t===BRIDGE) items.push({x,y,d:x+y,cover:1});
   }
 }
+// ---- 小さなボート(横浜駅マップ): 運河をコの字に通る。電車の半分の頻度(電車は約55秒おき → ボートは約110秒おき)。行きと帰りで、向きを交互にする ----
+const BOAT_SPEED = 1.3, BOAT_WAIT = 91;          // 速さ(マス/秒) / 次に通るまでの待ち時間(秒)
+const BOAT = (MAPDEF.boat && !PREVIEW) ? (()=>{
+  const p=MAPDEF.boat.path, seg=[]; let L=0;
+  for(let i=0;i+1<p.length;i++){ const dx=p[i+1][0]-p[i][0], dy=p[i+1][1]-p[i][1], l=Math.hypot(dx,dy); seg.push({a:p[i],dx:dx/l,dy:dy/l,l,s0:L}); L+=l; }
+  return {seg,L};
+})() : null;
+const boat = {s:0, dir:1, wait:20};
+function boatAt(s){
+  const sg=BOAT.seg; let g=sg[sg.length-1];
+  for(const q of sg) if(s<=q.s0+q.l){ g=q; break; }
+  const u=Math.min(Math.max(s-g.s0,0),g.l);
+  let dx=g.dx, dy=g.dy;                                    // 曲がり角の前後0.5マスで、向きをなめらかに変える
+  for(let i=1;i<sg.length;i++){ const c=sg[i].s0, w=Math.max(0,Math.min(1,(s-(c-.5))/1));
+    if(w>0&&w<1){ dx=sg[i-1].dx*(1-w)+sg[i].dx*w; dy=sg[i-1].dy*(1-w)+sg[i].dy*w; const l=Math.hypot(dx,dy)||1; dx/=l; dy/=l; } }
+  const fd=MAPDEF.boat.fade||0, a=fd?Math.max(0,Math.min(1,s/fd,(BOAT.L-s)/fd)):1;     // fade: 端から、この距離(マス)で、だんだん消える
+  return {x:g.a[0]+g.dx*u, y:g.a[1]+g.dy*u, hx:dx*boat.dir, hy:dy*boat.dir, a};
+}
+function updateBoat(dt){
+  if(!BOAT) return;
+  if(boat.wait>0){ boat.wait-=dt; return; }
+  boat.s += boat.dir*BOAT_SPEED*dt;
+  if(boat.dir>0 && boat.s>=BOAT.L){ boat.s=BOAT.L; boat.dir=-1; boat.wait=BOAT_WAIT; }
+  else if(boat.dir<0 && boat.s<=0){ boat.s=0; boat.dir=1; boat.wait=BOAT_WAIT; }
+}
+function boatItems(items){
+  if(!BOAT || boat.wait>0) return;
+  const b=boatAt(boat.s), sx=b.x-b.hx*.22, sy=b.y-b.hy*.22, bx=b.x+b.hx*.22, by=b.y+b.hy*.22;
+  // 船尾か船首が橋・道のマスにあるときは、そのマスを描き直す(=橋の下をくぐる)より先に描く
+  const d=Math.min(Math.floor(sx)+Math.floor(sy), Math.floor(bx)+Math.floor(by))-.5;
+  items.push({x:b.x,y:b.y,d,boat:b});
+  const seen=new Set();
+  for(const g of BOAT.seg) for(let u=0;u<=g.l;u+=.25){
+    const cx=Math.floor(g.a[0]+g.dx*u), cy=Math.floor(g.a[1]+g.dy*u), k=cy*N+cx;
+    if(!inb(cx,cy)||seen.has(k)) continue; seen.add(k);
+    if(terrain[cy][cx]!==WATER) items.push({x:cx,y:cy,d:cx+cy,cover:1});
+  }
+}
+function drawBoat(b){
+  ctx.save(); ctx.globalAlpha=b.a;
+  const z0=SHIP_WATER_Z-2+Math.sin(performance.now()/700)*.8, H=3.5;
+  const P=(x,y,z)=>{ const [a,c]=proj(x,y); return [a,c-z]; };
+  const hx=b.hx, hy=b.hy, nx=-hy, ny=hx, Lh=.18, W=.077;
+  const q=(l,w)=>[b.x+hx*l+nx*w, b.y+hy*l+ny*w];
+  const hull=[q(-Lh,-W),q(-Lh,W),q(.04,W),q(Lh,0),q(.04,-W)];       // 船尾 → 右舷 → 船首 → 左舷
+  let area=0; for(let i=0;i<hull.length;i++){ const A=hull[i], B=hull[(i+1)%hull.length]; area+=A[0]*B[1]-B[0]*A[1]; }
+  const sg=area>0?1:-1;
+  for(let i=0;i<hull.length;i++){                                    // 五角柱: 上の面と下の面は同じ形。外向きの法線が手前(+x, +y)を向く側面だけ描く
+    const A=hull[i], B=hull[(i+1)%hull.length], ex=B[0]-A[0], ey=B[1]-A[1], nx2=ey*sg, ny2=-ex*sg;   // 外向きの法線
+    if(nx2+ny2<=1e-9) continue;
+    const f=.8+.2*Math.max(0,ny2)/(Math.abs(nx2)+Math.abs(ny2)+1e-9);
+    poly([P(A[0],A[1],z0),P(B[0],B[1],z0),P(B[0],B[1],z0+H),P(A[0],A[1],z0+H)], shade('#ffffff',f));
+  }
+  poly(hull.map(h=>P(h[0],h[1],z0+H)), '#ffffff');                    // 甲板(真っ白)
+  ctx.restore();
+}
 function drawRoadCover(x,y){
   const t=terrain[y][x];
   const im = t===BRIDGE ? ROAD_IMGS[wet(x-1,y)&&wet(x+1,y) ? 'NS' : 'EW'] : ROAD_IMGS[roadMask(x,y)];
@@ -1248,7 +1315,7 @@ function drawTrainCar(t){
 
 function frame(now){
   const dt=Math.min(.05,(now-(frame.last||now))/1000); frame.last=now;
-  updateCars(dt); updateSites(now); updateTrain(dt); updateAmbience(now);
+  updateCars(dt); updateSites(now); updateTrain(dt); updateBoat(dt); updateAmbience(now);
   layout();
   ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height);
   ctx.setTransform(dpr*view.s,0,0,dpr*view.s,dpr*view.tx,dpr*view.ty);
@@ -1289,13 +1356,14 @@ function frame(now){
     const px=c.gx+(c.tx-c.gx)*c.t+c.ox, py=c.gy+(c.ty-c.gy)*c.t+c.oy;
     items.push({x:px,y:py,d:px+py+.3,car:c});
   }
-  trainItems(items); trainCoverItems(items);
+  trainItems(items); trainCoverItems(items); boatItems(items);
   items.sort((a,b)=>a.d-b.d||a.x-b.x);
   for(const it of items){
     if(it.st){ drawStationCell(it.x,it.y); continue; }
     if(it.rwbox){ drawRopewayBox(it.x,it.y); continue; }
     if(it.car){ drawCar(it.car); continue; }
     if(it.tr){ drawTrainCar(it.tr); continue; }
+    if(it.boat){ drawBoat(it.boat); continue; }
     if(it.cover){ drawRoadCover(it.x,it.y); continue; }
     if(it.site){ drawSite(it.site,now); continue; }
     if(it.fence!=null){ drawFence(it.x,it.y,it.fence); continue; }
@@ -1304,7 +1372,7 @@ function frame(now){
     if(it.gd){ it.gd(); continue; }
     let h=heightOf(it.v), lift=0, selected=false, glow=0;
     if(it.mv){
-      lift=3;                                           // あまり浮かさず、真下に疑似ドロップシャドウ(50%)
+      lift=7;                                           // 移動中は少し浮かせて、真下に疑似ドロップシャドウ(50%)
       const [sx,sy]=center(it.x,it.y);
       ctx.save(); ctx.fillStyle='rgba(0,0,0,.5)'; ctx.beginPath(); ctx.ellipse(sx,sy,TW*.34,TH*.34,0,0,Math.PI*2); ctx.fill(); ctx.restore();
     }
@@ -1554,11 +1622,15 @@ function drawCelebration(now){
 function resetCelebration(){ FW.on=false; FW.rockets.length=0; FW.sparks.length=0; FW.flashes.length=0; FW.last=0; }
 
 // ================= 効果音 (WebAudioで合成。素材ファイルなし) =================
-let AC=null, master=null, reverb=null, soundOn=true, noiseBuf=null, clackT=0;
+let AC=null, master=null, reverb=null, soundOn=true, musicOn=true, noiseBuf=null, clackT=0;
+// 音量: 効果音(SFX)と音楽(Music)を、別々に 0〜100% で。はじまりは、どちらも 50%(今までの音の大きさ)。0 でオフ。前回の設定は覚えておく
+let sfxVol=.5, musicVol=.5;
+try{ const v=JSON.parse(localStorage.getItem('yokohama-vol')||'null'); if(v){ if(typeof v.sfx==='number') sfxVol=Math.max(0,Math.min(1,v.sfx)); if(typeof v.music==='number') musicVol=Math.max(0,Math.min(1,v.music)); } }catch(_){}
+soundOn = sfxVol>0; musicOn = musicVol>0;
 function audioInit(){
   if(AC) { if(AC.state==='suspended') AC.resume(); return; }
   try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(_){ return; }
-  master=AC.createGain(); master.gain.value=soundOn?1:0; master.connect(AC.destination);
+  master=AC.createGain(); master.gain.value=sfxVol*2; master.connect(AC.destination);
   noiseBuf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);
   const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
   { const len=AC.sampleRate*1.6, ir=AC.createBuffer(2,len,AC.sampleRate);          // 遠くで響く残響(減衰するノイズ)
@@ -1566,6 +1638,7 @@ function audioInit(){
     const cv=AC.createConvolver(), lp=AC.createBiquadFilter(), wg=AC.createGain();
     cv.buffer=ir; lp.type='lowpass'; lp.frequency.value=1800; wg.gain.value=.3;
     reverb=AC.createGain(); reverb.connect(cv); cv.connect(lp); lp.connect(wg); wg.connect(master); }
+  if(typeof bgmStart==='function') bgmStart();
 }
 function noiseSrc(){ const n=AC.createBufferSource(); n.buffer=noiseBuf; n.loop=true; n.start(0,Math.random()); return n; }
 function tone(freq,t0,dur,type,vol,dest){
@@ -1578,19 +1651,19 @@ function tone(freq,t0,dur,type,vol,dest){
 function sfxDrag(dur){
   if(!AC||!soundOn) return;
   const t=AC.currentTime, end=t+dur+.1;
-  const env=AC.createGain(); env.gain.setValueAtTime(0.0001,t); env.gain.linearRampToValueAtTime(8,t+.1); env.gain.setValueAtTime(8,t+Math.max(.11,dur-.1)); env.gain.linearRampToValueAtTime(0.0001,end);
+  const env=AC.createGain(); env.gain.setValueAtTime(0.0001,t); env.gain.linearRampToValueAtTime(3.5,t+.1); env.gain.setValueAtTime(3.5,t+Math.max(.11,dur-.1)); env.gain.linearRampToValueAtTime(0.0001,end);
   env.connect(master);
   const n=noiseSrc(), f=AC.createBiquadFilter(), g=AC.createGain();       // 低いノイズを細かく震わせてゴゴゴ感を出す
-  f.type='lowpass'; f.frequency.value=36; f.Q.value=1.2; g.gain.value=.3;
+  f.type='lowpass'; f.frequency.value=48; f.Q.value=1.2; g.gain.value=.3;
   g.gain.setValueAtTime(.1,t);                                           // 連打: ゆっくり・まばらに「ゴッ…………ゴッ」。山ごとに音の高さも変える
   const d=AC.createOscillator(), df=AC.createBiquadFilter(), dg=AC.createGain();   // 腹に響く低い唸り
-  const scale=[12,13.5,15,16,18,20];                                       // 低い唸りの音階(Hz)。連打の速さ = この周波数
-  d.type='sawtooth'; d.frequency.value=scale[Math.random()*scale.length|0]; df.type='lowpass'; df.frequency.value=50; dg.gain.value=.2;
+  const scale=[9.6,10.8,11.7,12.6,14.1,15.9];                                       // 低い唸りの音階(Hz)。連打の速さ = この周波数
+  d.type='sawtooth'; d.frequency.value=scale[Math.random()*scale.length|0]; df.type='lowpass'; df.frequency.value=66; dg.gain.value=.2;
   const beats=[];                                                        // 山(ゴッ)ごとの、時刻と唸りの高さ
   for(let q=.05; q<dur; q+=.8+Math.random()*1.6){
     const pk=.3+Math.random()*.35, fq=scale[Math.random()*scale.length|0];
     g.gain.setValueAtTime(.1,t+q); g.gain.linearRampToValueAtTime(pk,t+q+.08); g.gain.linearRampToValueAtTime(.1,t+q+.35);
-    f.frequency.setValueAtTime(36*(.6+Math.random()*.9), t+q);
+    f.frequency.setValueAtTime(48*(.6+Math.random()*.9), t+q);
     beats.push([q,fq]);
   }
   let fb=scale[Math.random()*scale.length|0], bi=0;
@@ -1675,6 +1748,209 @@ function updateAmbience(now){
     thud(clackT,.18*a); thud(clackT+.17,.12*a);
     clackT+=.62;
   }
+}
+
+// ---- BGM (Yamashita 専用): 中華っぽいポップ。A の五音音階で、琵琶風の「ぺんぺけ てんてけ」(鋭く弾いて短く切る・同じ音の連打) + 太鼓のキックと木魚のビート + 小さな銅鑼(なめらかな音は使わない)(ノイズ系の音は使わない)。小さな音で、8小節をくり返す ----
+const BGM_ON = (MAPID==='chinatown' || MAPID==='minato' || MAPID==='yokohama') && !PREVIEW;     // Yamashita: 中華ポップ(手作り) / Minato Mirai・Yokohama Station: MIDI の曲
+const BGM = {bpm:102, step:0, next:0, timer:0, bus:null};
+const BGM_LEN = 18*16;   // 曲の長さ: 18小節(テンポ102で約42秒)
+const BGM_LEAD = [   // [ステップ, MIDIノート, 長さ(ステップ), tr=1 なら てけてけ(細かく連打)]  1小節 = 16ステップ。A の五音音階(ラ・ド・レ・ミ・ソ)
+  [0,76,1],[1,76,1],[2,79,1],[4,76,1],[5,76,1],[6,79,1],[8,81,2],[10,79,1],[11,76,1],[12,74,1],[13,76,1],[14,72,2],
+  [16,69,1],[17,69,1],[18,72,1],[20,69,1],[21,69,1],[22,72,1],[24,74,2],[26,72,1],[27,69,1],[28,67,1],[29,69,1],[30,64,2],
+  [32,81,1],[33,81,1],[34,84,1],[36,81,1],[37,81,1],[38,84,1],[40,86,2],[42,84,1],[43,81,1],[44,79,1],[45,81,1],[46,76,2],
+  [48,76,4,1],[52,74,1],[53,72,1],[54,69,2],[56,72,1],[57,74,1],[58,76,1],[59,79,1],[60,76,4,1],
+  [64,76,1],[65,76,1],[66,79,1],[68,76,1],[69,76,1],[70,79,1],[72,81,2],[74,84,1],[75,81,1],[76,79,1],[77,81,1],[78,76,2],
+  [80,69,1],[81,69,1],[82,72,1],[84,69,1],[85,69,1],[86,72,1],[88,74,2],[90,76,1],[91,74,1],[92,72,1],[93,74,1],[94,69,2],
+  [96,79,1],[97,79,1],[98,81,1],[100,79,1],[101,79,1],[102,81,1],[104,83,2],[106,81,1],[107,79,1],[108,76,1],[109,79,1],[110,74,2],
+  [112,76,4,1],[116,74,1],[117,72,1],[118,69,2],[120,72,2],[122,69,2],[124,69,4,1],
+  [128,81,1],[129,79,1],[130,76,1],[131,79,1],[132,81,1],[133,79,1],[134,76,1],[135,79,1],[136,81,2],[138,84,2],[140,81,2],[142,79,2],
+  [144,76,1],[145,74,1],[146,72,1],[147,74,1],[148,76,1],[149,74,1],[150,72,1],[151,74,1],[152,76,2],[154,79,2],[156,76,4,1],
+  [160,84,1],[161,81,1],[162,79,1],[163,81,1],[164,84,1],[165,81,1],[166,79,1],[167,81,1],[168,86,2],[170,84,2],[172,81,2],[174,79,2],
+  [176,76,2],[178,79,2],[180,81,2],[182,79,2],[184,76,1],[185,76,1],[186,79,1],[187,76,1],[188,72,2],[190,69,2],
+  [192,84,1],[193,81,1],[194,79,1],[195,81,1],[196,84,1],[197,81,1],[198,79,1],[199,81,1],[200,84,2],[202,86,2],[204,84,2],[206,81,2],
+  [208,83,1],[209,79,1],[210,76,1],[211,79,1],[212,83,1],[213,79,1],[214,76,1],[215,79,1],[216,83,2],[218,86,2],[220,83,4,1],
+  [224,81,1],[225,79,1],[226,76,1],[227,79,1],[228,81,1],[229,84,1],[230,86,1],[231,84,1],[232,88,2],[234,86,2],[236,84,2],[238,81,2],
+  [240,83,1],[241,81,1],[242,79,1],[243,81,1],[244,83,1],[245,79,1],[246,76,1],[247,79,1],[248,76,2],[250,79,2],[252,83,4,1],
+  [256,88,1],[257,86,1],[258,84,1],[259,83,1],[260,81,1],[261,79,1],[262,76,1],[263,74,1],[264,76,2],[266,74,2],[268,72,2],[270,69,2],
+  [272,71,2],[274,74,2],[276,76,2],[278,79,2],[280,76,4,1],[284,69,4,1],
+];
+const BGM_CHORDS = (()=>{   // 小節ごとの [ベース, 裏拍で弾く2音]。Am - G - E の3つの和音で、18小節
+  const Am=[45,[69,76]], G=[43,[67,74]], E=[40,[64,71]];
+  return [Am,Am,G,Am, Am,Am,G,Am, Am,Am,G,E, Am,G,Am,E, G,E];
+})();
+const mtof = m => 440*Math.pow(2,(m-69)/12);
+function bgmPluck(t,m,vol){                                // 琵琶・古筝風: ぽろんと弾く音
+  const o=AC.createOscillator(), o2=AC.createOscillator(), g=AC.createGain();
+  o.type='triangle'; o.frequency.value=mtof(m); o2.type='sine'; o2.frequency.value=mtof(m)*2.01;
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.006); g.gain.exponentialRampToValueAtTime(.0001,t+.42);
+  o.connect(g); o2.connect(g); g.connect(BGM.bus); g.connect(BGM.rev); o.start(t); o2.start(t); o.stop(t+.45); o2.stop(t+.45);
+}
+function bgmPipa(t,m,vol,dec){                             // 琵琶・三味線風: 鋭く弾いて、すぐ減衰する「ぺん」
+  const o=AC.createOscillator(), o2=AC.createOscillator(), lp=AC.createBiquadFilter(), g=AC.createGain();
+  o.type='sawtooth'; o.frequency.value=mtof(m); o2.type='triangle'; o2.frequency.value=mtof(m)*2;
+  lp.type='lowpass'; lp.Q.value=1.2; lp.frequency.setValueAtTime(4200,t); lp.frequency.exponentialRampToValueAtTime(800,t+.14);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.003); g.gain.exponentialRampToValueAtTime(.0001,t+(dec||.22));
+  o.connect(lp); o2.connect(lp); lp.connect(g); g.connect(BGM.bus); g.connect(BGM.rev); o.start(t); o2.start(t); o.stop(t+(dec||.22)+.05); o2.stop(t+(dec||.22)+.05);
+}
+function bgmLead(t,m,dur,vol){                              // 二胡風: のこぎり波をやわらげて、ゆるいビブラートを付ける
+  const o=AC.createOscillator(), lp=AC.createBiquadFilter(), g=AC.createGain(), lfo=AC.createOscillator(), lg=AC.createGain();
+  o.type='sawtooth'; o.frequency.value=mtof(m); lp.type='lowpass'; lp.frequency.value=1500; lp.Q.value=.7;
+  lfo.frequency.value=5.4; lg.gain.setValueAtTime(0,t); lg.gain.linearRampToValueAtTime(mtof(m)*.012,t+Math.min(.25,dur*.6)); lfo.connect(lg); lg.connect(o.frequency);
+  g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(vol,t+.04); g.gain.setValueAtTime(vol,t+Math.max(.05,dur-.08)); g.gain.linearRampToValueAtTime(.0001,t+dur+.1);
+  o.connect(lp); lp.connect(g); g.connect(BGM.bus); g.connect(BGM.rev); o.start(t); lfo.start(t); o.stop(t+dur+.15); lfo.stop(t+dur+.15);
+}
+function bgmBass(t,m,dur,vol){
+  const o=AC.createOscillator(), g=AC.createGain(); o.type='triangle'; o.frequency.value=mtof(m);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g); g.connect(BGM.bus); o.start(t); o.stop(t+dur+.05);
+}
+function bgmWood(t,vol){                                    // 木魚: コッ
+  for(const [f,v,d] of [[820,1,.07],[1260,.5,.05]]){
+    const o=AC.createOscillator(), g=AC.createGain(); o.type='sine'; o.frequency.setValueAtTime(f,t); o.frequency.exponentialRampToValueAtTime(f*.8,t+d);
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol*v,t+.003); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g); g.connect(BGM.bus); o.start(t); o.stop(t+d+.02);
+  }
+}
+function bgmKick(t,vol){
+  const o=AC.createOscillator(), g=AC.createGain(); o.type='sine'; o.frequency.setValueAtTime(120,t); o.frequency.exponentialRampToValueAtTime(48,t+.1);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.004); g.gain.exponentialRampToValueAtTime(.0001,t+.18);
+  o.connect(g); g.connect(BGM.bus); o.start(t); o.stop(t+.2);
+}
+function bgmGong(t,vol){                                    // 小さな銅鑼(小節の頭だけ)
+  for(const [m,v] of [[1,1],[1.58,.6],[2.3,.4]]){
+    const o=AC.createOscillator(), g=AC.createGain(); o.type='sine'; o.frequency.value=196*m;
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol*v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+1.8);
+    o.connect(g); g.connect(BGM.bus); g.connect(BGM.rev); o.start(t); o.stop(t+1.9);
+  }
+}
+function bgmStepChina(i,t){
+  const st=i%BGM_LEN, bar=st>>4, k=st&15, [bass,ch]=BGM_CHORDS[bar], sd=60/BGM.bpm/4;
+  if(k===0||k===8) bgmKick(t,k===0?.42:.3);                                          // 太鼓のような、低いドン
+  if(k===0&&bar%4===0) bgmGong(t,.05);
+  if(k===0||k===3||k===8||k===11) bgmBass(t,bass,sd*2,.22);                          // 跳ねるベース
+  if(k===12) bgmBass(t,bass+7,sd*2,.2);
+  if(k%2===0) bgmWood(t,k%4===0?.06:.03);                                            // コッコッコッ…と刻む木魚
+  if(k===4||k===12) bgmWood(t,.08);
+  if(k===2||k===6||k===10||k===14){ bgmPipa(t,ch[0],.03,.12); bgmPipa(t,ch[1],.03,.12); }   // 裏拍の短い「ぺけ」(和音を弾く)
+  for(const [s,m,d,tr] of BGM_LEAD){
+    if(s!==st) continue;
+    if(tr) for(let j=0;j<d;j++) bgmPipa(t+j*sd,m,.05-.004*j,.12);                    // てけてけてけ…(同じ音を細かく連打)
+    else bgmPipa(t,m,.06,.18+d*.03);                                                  // ぺん
+  }
+}
+function bgmStep(i,t){ return bgmStepChina(i,t); }
+const MIDI_MINATO = {   // Minato Mirai のBGM: neon_return_ep_faint.mid を、そのまま埋め込んだもの。[開始(拍×1000), ノート番号, 長さ(拍×1000), ベロシティ]
+  bpm: 108.0, len: 128,
+  ep: [[0,57,700,76],[8,60,700,79],[19,64,700,76],[27,65,700,79],[1500,57,321,65],[1508,60,321,68],[1519,64,319,65],[1527,65,321,68],[2500,57,600,72],[2508,60,600,75],[2519,64,600,72],[2527,65,600,75],[3500,57,300,60],[3508,60,300,63],[3519,64,300,60],[3527,65,300,63],[4000,53,700,76],[4008,57,700,79],[4019,59,700,76],[4027,64,700,79],[5500,53,321,65],[5508,57,321,68],[5519,59,319,65],[5527,64,321,68],[6500,53,600,72],[6508,57,600,75],[6519,59,600,72],[6527,64,600,75],[7500,53,300,60],[7508,57,300,63],[7519,59,300,60],[7527,64,300,63],[8000,55,700,76],[8008,59,700,79],[8019,62,700,76],[8027,64,700,79],[9500,55,321,65],[9508,59,321,68],[9519,62,319,65],[9527,64,321,68],[10500,55,600,72],[10508,59,600,75],[10519,62,600,72],[10527,64,600,75],[11500,55,300,60],[11508,59,300,63],[11519,62,300,60],[11527,64,300,63],[12000,55,700,76],[12008,60,700,79],[12019,64,700,76],[12027,67,700,79],[13500,55,321,65],[13508,60,321,68],[13519,64,319,65],[13527,67,321,68],[14500,55,600,72],[14508,60,600,75],[14519,64,600,72],[14527,67,600,75],[15500,55,300,60],[15508,60,300,63],[15519,64,300,60],[15527,67,300,63],[16000,57,700,76],[16008,60,700,79],[16019,64,700,76],[16027,67,700,79],[17500,57,321,65],[17508,60,321,68],[17519,64,319,65],[17527,67,321,68],[18500,57,600,72],[18508,60,600,75],[18519,64,600,72],[18527,67,600,75],[19500,57,300,60],[19508,60,300,63],[19519,64,300,60],[19527,67,300,63],[20000,57,700,76],[20008,60,700,79],[20019,63,700,76],[20027,66,700,79],[21500,57,321,65],[21508,60,321,68],[21519,63,319,65],[21527,66,321,68],[22500,57,600,72],[22508,60,600,75],[22519,63,600,72],[22527,66,600,75],[23500,57,300,60],[23508,60,300,63],[23519,63,300,60],[23527,66,300,63],[24000,55,700,76],[24008,59,700,79],[24019,62,700,76],[24027,66,700,79],[25500,55,321,65],[25508,59,321,68],[25519,62,319,65],[25527,66,321,68],[26500,55,600,72],[26508,59,600,75],[26519,62,600,72],[26527,66,600,75],[27500,55,300,60],[27508,59,300,63],[27519,62,300,60],[27527,66,300,63],[28000,55,700,76],[28008,58,700,79],[28019,61,700,76],[28027,65,700,79],[29500,55,321,65],[29508,58,321,68],[29519,61,319,65],[29527,65,321,68],[30500,55,600,72],[30508,58,600,75],[30519,61,600,72],[30527,65,600,75],[31500,55,300,60],[31508,58,300,63],[31519,61,300,60],[31527,65,300,63],[32000,57,700,76],[32008,60,700,79],[32019,64,700,76],[32027,65,700,79],[33500,57,321,65],[33508,60,321,68],[33519,64,319,65],[33527,65,321,68],[34500,57,600,72],[34508,60,600,75],[34519,64,600,72],[34527,65,600,75],[35500,57,300,60],[35508,60,300,63],[35519,64,300,60],[35527,65,300,63],[36000,53,700,76],[36008,57,700,79],[36019,59,700,76],[36027,64,700,79],[37500,53,321,65],[37508,57,321,68],[37519,59,319,65],[37527,64,321,68],[38500,53,600,72],[38508,57,600,75],[38519,59,600,72],[38527,64,600,75],[39500,53,300,60],[39508,57,300,63],[39519,59,300,60],[39527,64,300,63],[40000,55,700,76],[40008,59,700,79],[40019,62,700,76],[40027,64,700,79],[41500,55,321,65],[41508,59,321,68],[41519,62,319,65],[41527,64,321,68],[42500,55,600,72],[42508,59,600,75],[42519,62,600,72],[42527,64,600,75],[43500,55,300,60],[43508,59,300,63],[43519,62,300,60],[43527,64,300,63],[44000,55,700,76],[44008,59,700,79],[44019,60,700,76],[44027,64,700,79],[45500,55,321,65],[45508,59,321,68],[45519,60,319,65],[45527,64,321,68],[46500,55,600,72],[46508,59,600,75],[46519,60,600,72],[46527,64,600,75],[47500,55,300,60],[47508,59,300,63],[47519,60,300,60],[47527,64,300,63],[48000,57,700,76],[48008,60,700,79],[48019,64,700,76],[48027,67,700,79],[49500,57,321,65],[49508,60,321,68],[49519,64,319,65],[49527,67,321,68],[50500,57,600,72],[50508,60,600,75],[50519,64,600,72],[50527,67,600,75],[51500,57,300,60],[51508,60,300,63],[51519,64,300,60],[51527,67,300,63],[52000,53,700,76],[52008,57,700,79],[52019,59,700,76],[52027,64,700,79],[53500,53,321,65],[53508,57,321,68],[53519,59,319,65],[53527,64,321,68],[54500,53,600,72],[54508,57,600,75],[54519,59,600,72],[54527,64,600,75],[55500,53,300,60],[55508,57,300,63],[55519,59,300,60],[55527,64,300,63],[56000,55,700,76],[56008,59,700,79],[56019,62,700,76],[56027,66,700,79],[57500,55,321,65],[57508,59,321,68],[57519,62,319,65],[57527,66,321,68],[58500,55,600,72],[58508,59,600,75],[58519,62,600,72],[58527,66,600,75],[59500,55,300,60],[59508,59,300,63],[59519,62,300,60],[59527,66,300,63],[60000,55,700,76],[60008,58,700,79],[60019,61,700,76],[60027,65,700,79],[61500,55,321,65],[61508,58,321,68],[61519,61,319,65],[61527,65,321,68],[62500,55,600,72],[62508,58,600,75],[62519,61,600,72],[62527,65,600,75],[63500,55,300,60],[63508,58,300,63],[63519,61,300,60],[63527,65,300,63],[64000,57,700,76],[64008,60,700,79],[64019,64,700,76],[64027,65,700,79],[65500,57,321,65],[65508,60,321,68],[65519,64,319,65],[65527,65,321,68],[66500,57,600,72],[66508,60,600,75],[66519,64,600,72],[66527,65,600,75],[67500,57,300,60],[67508,60,300,63],[67519,64,300,60],[67527,65,300,63],[68000,53,700,76],[68008,57,700,79],[68019,59,700,76],[68027,64,700,79],[69500,53,321,65],[69508,57,321,68],[69519,59,319,65],[69527,64,321,68],[70500,53,600,72],[70508,57,600,75],[70519,59,600,72],[70527,64,600,75],[71500,53,300,60],[71508,57,300,63],[71519,59,300,60],[71527,64,300,63],[72000,55,700,76],[72008,59,700,79],[72019,62,700,76],[72027,64,700,79],[73500,55,321,65],[73508,59,321,68],[73519,62,319,65],[73527,64,321,68],[74500,55,600,72],[74508,59,600,75],[74519,62,600,72],[74527,64,600,75],[75500,55,300,60],[75508,59,300,63],[75519,62,300,60],[75527,64,300,63],[76000,55,700,76],[76008,60,700,79],[76019,64,700,76],[76027,67,700,79],[77500,55,321,65],[77508,60,321,68],[77519,64,319,65],[77527,67,321,68],[78500,55,600,72],[78508,60,600,75],[78519,64,600,72],[78527,67,600,75],[79500,55,300,60],[79508,60,300,63],[79519,64,300,60],[79527,67,300,63],[80000,57,700,76],[80008,60,700,79],[80019,64,700,76],[80027,67,700,79],[81500,57,321,65],[81508,60,321,68],[81519,64,319,65],[81527,67,321,68],[82500,57,600,72],[82508,60,600,75],[82519,64,600,72],[82527,67,600,75],[83500,57,300,60],[83508,60,300,63],[83519,64,300,60],[83527,67,300,63],[84000,57,700,76],[84008,60,700,79],[84019,63,700,76],[84027,66,700,79],[85500,57,321,65],[85508,60,321,68],[85519,63,319,65],[85527,66,321,68],[86500,57,600,72],[86508,60,600,75],[86519,63,600,72],[86527,66,600,75],[87500,57,300,60],[87508,60,300,63],[87519,63,300,60],[87527,66,300,63],[88000,55,700,76],[88008,59,700,79],[88019,62,700,76],[88027,66,700,79],[89500,55,321,65],[89508,59,321,68],[89519,62,319,65],[89527,66,321,68],[90500,55,600,72],[90508,59,600,75],[90519,62,600,72],[90527,66,600,75],[91500,55,300,60],[91508,59,300,63],[91519,62,300,60],[91527,66,300,63],[92000,55,700,76],[92008,58,700,79],[92019,61,700,76],[92027,65,700,79],[93500,55,321,65],[93508,58,321,68],[93519,61,319,65],[93527,65,321,68],[94500,55,600,72],[94508,58,600,75],[94519,61,600,72],[94527,65,600,75],[95500,55,300,60],[95508,58,300,63],[95519,61,300,60],[95527,65,300,63],[96000,57,700,76],[96008,60,700,79],[96019,64,700,76],[96027,65,700,79],[97500,57,321,65],[97508,60,321,68],[97519,64,319,65],[97527,65,321,68],[98500,57,600,72],[98508,60,600,75],[98519,64,600,72],[98527,65,600,75],[99500,57,300,60],[99508,60,300,63],[99519,64,300,60],[99527,65,300,63],[100000,53,700,76],[100008,57,700,79],[100019,59,700,76],[100027,64,700,79],[101500,53,321,65],[101508,57,321,68],[101519,59,319,65],[101527,64,321,68],[102500,53,600,72],[102508,57,600,75],[102519,59,600,72],[102527,64,600,75],[103500,53,300,60],[103508,57,300,63],[103519,59,300,60],[103527,64,300,63],[104000,55,700,76],[104008,59,700,79],[104019,62,700,76],[104027,64,700,79],[105500,55,321,65],[105508,59,321,68],[105519,62,319,65],[105527,64,321,68],[106500,55,600,72],[106508,59,600,75],[106519,62,600,72],[106527,64,600,75],[107500,55,300,60],[107508,59,300,63],[107519,62,300,60],[107527,64,300,63],[108000,55,700,76],[108008,59,700,79],[108019,60,700,76],[108027,64,700,79],[109500,55,321,65],[109508,59,321,68],[109519,60,319,65],[109527,64,321,68],[110500,55,600,72],[110508,59,600,75],[110519,60,600,72],[110527,64,600,75],[111500,55,300,60],[111508,59,300,63],[111519,60,300,60],[111527,64,300,63],[112000,57,700,76],[112008,60,700,79],[112019,64,700,76],[112027,67,700,79],[113500,57,321,65],[113508,60,321,68],[113519,64,319,65],[113527,67,321,68],[114500,57,600,72],[114508,60,600,75],[114519,64,600,72],[114527,67,600,75],[115500,57,300,60],[115508,60,300,63],[115519,64,300,60],[115527,67,300,63],[116000,53,700,76],[116008,57,700,79],[116019,59,700,76],[116027,64,700,79],[117500,53,321,65],[117508,57,321,68],[117519,59,319,65],[117527,64,321,68],[118500,53,600,72],[118508,57,600,75],[118519,59,600,72],[118527,64,600,75],[119500,53,300,60],[119508,57,300,63],[119519,59,300,60],[119527,64,300,63],[120000,55,700,76],[120008,59,700,79],[120019,62,700,76],[120027,66,700,79],[121500,55,321,65],[121508,59,321,68],[121519,62,319,65],[121527,66,321,68],[122500,55,600,72],[122508,59,600,75],[122519,62,600,72],[122527,66,600,75],[123500,55,300,60],[123508,59,300,63],[123519,62,300,60],[123527,66,300,63],[124000,55,700,76],[124008,58,700,79],[124019,61,700,76],[124027,65,700,79],[125500,55,321,65],[125508,58,321,68],[125519,61,319,65],[125527,65,321,68],[126500,55,600,72],[126508,58,600,75],[126519,61,600,72],[126527,65,600,75],[127500,55,300,60],[127508,58,300,63],[127519,61,300,60],[127527,65,300,63]],
+  bass: [[0,38,598,97],[750,50,202,72],[1500,45,323,84],[2000,38,415,91],[2750,48,183,73],[3250,50,229,82],[3750,45,183,73],[4000,43,598,97],[4750,55,202,72],[5500,50,323,84],[6000,43,415,91],[6750,53,183,73],[7250,55,229,82],[7750,50,183,73],[8000,36,598,97],[8750,48,202,72],[9500,43,323,84],[10000,36,415,91],[10750,46,183,73],[11250,48,229,82],[11750,43,183,73],[12000,45,598,97],[12750,57,202,72],[13500,52,323,84],[14000,45,415,91],[14750,55,183,73],[15250,57,229,82],[15750,52,183,73],[16000,41,598,97],[16750,53,202,72],[17500,48,323,84],[18000,41,415,91],[18750,51,183,73],[19250,53,229,82],[19750,48,183,73],[20000,42,598,97],[20750,54,202,72],[21500,49,323,84],[22000,42,415,91],[22750,52,183,73],[23250,54,229,82],[23750,49,183,73],[24000,40,598,97],[24750,52,202,72],[25500,47,323,84],[26000,40,415,91],[26750,50,183,73],[27250,52,229,82],[27750,47,183,73],[28000,45,598,97],[28750,57,202,72],[29500,52,323,84],[30000,45,415,91],[30750,55,183,73],[31250,57,229,82],[31750,52,183,73],[32000,38,598,97],[32750,50,202,72],[33500,45,323,84],[34000,38,415,91],[34750,48,183,73],[35250,50,229,82],[35750,45,183,73],[36000,43,598,97],[36750,55,202,72],[37500,50,323,84],[38000,43,415,91],[38750,53,183,73],[39250,55,229,82],[39750,50,183,73],[40000,36,598,97],[40750,48,202,72],[41500,43,323,84],[42000,36,415,91],[42750,46,183,73],[43250,48,229,82],[43750,43,183,73],[44000,33,598,97],[44750,45,202,72],[45500,40,323,84],[46000,33,415,91],[46750,43,183,73],[47250,45,229,82],[47750,40,183,73],[48000,41,598,97],[48750,53,202,72],[49500,48,323,84],[50000,41,415,91],[50750,51,183,73],[51250,53,229,82],[51750,48,183,73],[52000,43,598,97],[52750,55,202,72],[53500,50,323,84],[54000,43,415,91],[54750,53,183,73],[55250,55,229,82],[55750,50,183,73],[56000,40,598,97],[56750,52,202,72],[57500,47,323,84],[58000,40,415,91],[58750,50,183,73],[59250,52,229,82],[59750,47,183,73],[60000,45,598,97],[60750,57,202,72],[61500,52,323,84],[62000,45,415,91],[62750,55,183,73],[63250,57,229,82],[63750,52,183,73],[64000,38,598,97],[64750,50,202,72],[65500,45,323,84],[66000,38,415,91],[66750,48,183,73],[67250,50,229,82],[67750,45,183,73],[68000,43,598,97],[68750,55,202,72],[69500,50,323,84],[70000,43,415,91],[70750,53,183,73],[71250,55,229,82],[71750,50,183,73],[72000,36,598,97],[72750,48,202,72],[73500,43,323,84],[74000,36,415,91],[74750,46,183,73],[75250,48,229,82],[75750,43,183,73],[76000,45,598,97],[76750,57,202,72],[77500,52,323,84],[78000,45,415,91],[78750,55,183,73],[79250,57,229,82],[79750,52,183,73],[80000,41,598,97],[80750,53,202,72],[81500,48,323,84],[82000,41,415,91],[82750,51,183,73],[83250,53,229,82],[83750,48,183,73],[84000,42,598,97],[84750,54,202,72],[85500,49,323,84],[86000,42,415,91],[86750,52,183,73],[87250,54,229,82],[87750,49,183,73],[88000,40,598,97],[88750,52,202,72],[89500,47,323,84],[90000,40,415,91],[90750,50,183,73],[91250,52,229,82],[91750,47,183,73],[92000,45,598,97],[92750,57,202,72],[93500,52,323,84],[94000,45,415,91],[94750,55,183,73],[95250,57,229,82],[95750,52,183,73],[96000,38,598,97],[96750,50,202,72],[97500,45,323,84],[98000,38,415,91],[98750,48,183,73],[99250,50,229,82],[99750,45,183,73],[100000,43,598,97],[100750,55,202,72],[101500,50,323,84],[102000,43,415,91],[102750,53,183,73],[103250,55,229,82],[103750,50,183,73],[104000,36,598,97],[104750,48,202,72],[105500,43,323,84],[106000,36,415,91],[106750,46,183,73],[107250,48,229,82],[107750,43,183,73],[108000,33,598,97],[108750,45,202,72],[109500,40,323,84],[110000,33,415,91],[110750,43,183,73],[111250,45,229,82],[111750,40,183,73],[112000,41,598,97],[112750,53,202,72],[113500,48,323,84],[114000,41,415,91],[114750,51,183,73],[115250,53,229,82],[115750,48,183,73],[116000,43,598,97],[116750,55,202,72],[117500,50,323,84],[118000,43,415,91],[118750,53,183,73],[119250,55,229,82],[119750,50,183,73],[120000,40,598,97],[120750,52,202,72],[121500,47,323,84],[122000,40,415,91],[122750,50,183,73],[123250,52,229,82],[123750,47,183,73],[124000,45,598,97],[124750,57,202,72],[125500,52,323,84],[126000,45,415,91],[126750,55,183,73],[127250,57,229,82],[127750,52,183,73]],
+  gtr: [[500,69,104,48],[506,72,104,48],[512,76,104,48],[1000,69,104,48],[1006,72,104,48],[1012,76,104,48],[1750,69,104,48],[1756,72,104,48],[1762,76,104,48],[2500,69,104,48],[2506,72,104,48],[2512,76,104,48],[3000,69,104,48],[3006,72,104,48],[3012,76,104,48],[3750,69,104,48],[3756,72,104,48],[3762,76,104,48],[4500,65,104,51],[4506,69,104,51],[4512,71,104,51],[5000,65,104,51],[5006,69,104,51],[5012,71,104,51],[5750,65,104,51],[5756,69,104,51],[5762,71,104,51],[6500,65,104,51],[6506,69,104,51],[6512,71,104,51],[7000,65,104,51],[7006,69,104,51],[7012,71,104,51],[7750,65,104,51],[7756,69,104,51],[7762,71,104,51],[8500,67,104,54],[8506,71,104,54],[8512,74,104,54],[9000,67,104,54],[9006,71,104,54],[9012,74,104,54],[9750,67,104,54],[9756,71,104,54],[9762,74,104,54],[10500,67,104,54],[10506,71,104,54],[10512,74,104,54],[11000,67,104,54],[11006,71,104,54],[11012,74,104,54],[11750,67,104,54],[11756,71,104,54],[11762,74,104,54],[12500,67,104,48],[12506,72,104,48],[12512,76,104,48],[13000,67,104,48],[13006,72,104,48],[13012,76,104,48],[13750,67,104,48],[13756,72,104,48],[13762,76,104,48],[14500,67,104,48],[14506,72,104,48],[14512,76,104,48],[15000,67,104,48],[15006,72,104,48],[15012,76,104,48],[15750,67,104,48],[15756,72,104,48],[15762,76,104,48],[16500,69,104,51],[16506,72,104,51],[16512,76,104,51],[17000,69,104,51],[17006,72,104,51],[17012,76,104,51],[17750,69,104,51],[17756,72,104,51],[17762,76,104,51],[18500,69,104,51],[18506,72,104,51],[18512,76,104,51],[19000,69,104,51],[19006,72,104,51],[19012,76,104,51],[19750,69,104,51],[19756,72,104,51],[19762,76,104,51],[20500,69,104,54],[20506,72,104,54],[20512,75,104,54],[21000,69,104,54],[21006,72,104,54],[21012,75,104,54],[21750,69,104,54],[21756,72,104,54],[21762,75,104,54],[22500,69,104,54],[22506,72,104,54],[22512,75,104,54],[23000,69,104,54],[23006,72,104,54],[23012,75,104,54],[23750,69,104,54],[23756,72,104,54],[23762,75,104,54],[24500,67,104,48],[24506,71,104,48],[24512,74,104,48],[25000,67,104,48],[25006,71,104,48],[25012,74,104,48],[25750,67,104,48],[25756,71,104,48],[25762,74,104,48],[26500,67,104,48],[26506,71,104,48],[26512,74,104,48],[27000,67,104,48],[27006,71,104,48],[27012,74,104,48],[27750,67,104,48],[27756,71,104,48],[27762,74,104,48],[28500,67,104,51],[28506,70,104,51],[28512,73,104,51],[29000,67,104,51],[29006,70,104,51],[29012,73,104,51],[29750,67,104,51],[29756,70,104,51],[29762,73,104,51],[30500,67,104,51],[30506,70,104,51],[30512,73,104,51],[31000,67,104,51],[31006,70,104,51],[31012,73,104,51],[31750,67,104,51],[31756,70,104,51],[31762,73,104,51],[32500,69,104,54],[32506,72,104,54],[32512,76,104,54],[33000,69,104,54],[33006,72,104,54],[33012,76,104,54],[33750,69,104,54],[33756,72,104,54],[33762,76,104,54],[34500,69,104,54],[34506,72,104,54],[34512,76,104,54],[35000,69,104,54],[35006,72,104,54],[35012,76,104,54],[35750,69,104,54],[35756,72,104,54],[35762,76,104,54],[36500,65,104,48],[36506,69,104,48],[36512,71,104,48],[37000,65,104,48],[37006,69,104,48],[37012,71,104,48],[37750,65,104,48],[37756,69,104,48],[37762,71,104,48],[38500,65,104,48],[38506,69,104,48],[38512,71,104,48],[39000,65,104,48],[39006,69,104,48],[39012,71,104,48],[39750,65,104,48],[39756,69,104,48],[39762,71,104,48],[40500,67,104,51],[40506,71,104,51],[40512,74,104,51],[41000,67,104,51],[41006,71,104,51],[41012,74,104,51],[41750,67,104,51],[41756,71,104,51],[41762,74,104,51],[42500,67,104,51],[42506,71,104,51],[42512,74,104,51],[43000,67,104,51],[43006,71,104,51],[43012,74,104,51],[43750,67,104,51],[43756,71,104,51],[43762,74,104,51],[44500,67,104,54],[44506,71,104,54],[44512,72,104,54],[45000,67,104,54],[45006,71,104,54],[45012,72,104,54],[45750,67,104,54],[45756,71,104,54],[45762,72,104,54],[46500,67,104,54],[46506,71,104,54],[46512,72,104,54],[47000,67,104,54],[47006,71,104,54],[47012,72,104,54],[47750,67,104,54],[47756,71,104,54],[47762,72,104,54],[48500,69,104,48],[48506,72,104,48],[48512,76,104,48],[49000,69,104,48],[49006,72,104,48],[49012,76,104,48],[49750,69,104,48],[49756,72,104,48],[49762,76,104,48],[50500,69,104,48],[50506,72,104,48],[50512,76,104,48],[51000,69,104,48],[51006,72,104,48],[51012,76,104,48],[51750,69,104,48],[51756,72,104,48],[51762,76,104,48],[52500,65,104,51],[52506,69,104,51],[52512,71,104,51],[53000,65,104,51],[53006,69,104,51],[53012,71,104,51],[53750,65,104,51],[53756,69,104,51],[53762,71,104,51],[54500,65,104,51],[54506,69,104,51],[54512,71,104,51],[55000,65,104,51],[55006,69,104,51],[55012,71,104,51],[55750,65,104,51],[55756,69,104,51],[55762,71,104,51],[56500,67,104,54],[56506,71,104,54],[56512,74,104,54],[57000,67,104,54],[57006,71,104,54],[57012,74,104,54],[57750,67,104,54],[57756,71,104,54],[57762,74,104,54],[58500,67,104,54],[58506,71,104,54],[58512,74,104,54],[59000,67,104,54],[59006,71,104,54],[59012,74,104,54],[59750,67,104,54],[59756,71,104,54],[59762,74,104,54],[60500,67,104,48],[60506,70,104,48],[60512,73,104,48],[61000,67,104,48],[61006,70,104,48],[61012,73,104,48],[61750,67,104,48],[61756,70,104,48],[61762,73,104,48],[62500,67,104,48],[62506,70,104,48],[62512,73,104,48],[63000,67,104,48],[63006,70,104,48],[63012,73,104,48],[63750,67,104,48],[63756,70,104,48],[63762,73,104,48],[64500,69,104,51],[64506,72,104,51],[64512,76,104,51],[65000,69,104,51],[65006,72,104,51],[65012,76,104,51],[65750,69,104,51],[65756,72,104,51],[65762,76,104,51],[66500,69,104,51],[66506,72,104,51],[66512,76,104,51],[67000,69,104,51],[67006,72,104,51],[67012,76,104,51],[67750,69,104,51],[67756,72,104,51],[67762,76,104,51],[68500,65,104,54],[68506,69,104,54],[68512,71,104,54],[69000,65,104,54],[69006,69,104,54],[69012,71,104,54],[69750,65,104,54],[69756,69,104,54],[69762,71,104,54],[70500,65,104,54],[70506,69,104,54],[70512,71,104,54],[71000,65,104,54],[71006,69,104,54],[71012,71,104,54],[71750,65,104,54],[71756,69,104,54],[71762,71,104,54],[72500,67,104,48],[72506,71,104,48],[72512,74,104,48],[73000,67,104,48],[73006,71,104,48],[73012,74,104,48],[73750,67,104,48],[73756,71,104,48],[73762,74,104,48],[74500,67,104,48],[74506,71,104,48],[74512,74,104,48],[75000,67,104,48],[75006,71,104,48],[75012,74,104,48],[75750,67,104,48],[75756,71,104,48],[75762,74,104,48],[76500,67,104,51],[76506,72,104,51],[76512,76,104,51],[77000,67,104,51],[77006,72,104,51],[77012,76,104,51],[77750,67,104,51],[77756,72,104,51],[77762,76,104,51],[78500,67,104,51],[78506,72,104,51],[78512,76,104,51],[79000,67,104,51],[79006,72,104,51],[79012,76,104,51],[79750,67,104,51],[79756,72,104,51],[79762,76,104,51],[80500,69,104,54],[80506,72,104,54],[80512,76,104,54],[81000,69,104,54],[81006,72,104,54],[81012,76,104,54],[81750,69,104,54],[81756,72,104,54],[81762,76,104,54],[82500,69,104,54],[82506,72,104,54],[82512,76,104,54],[83000,69,104,54],[83006,72,104,54],[83012,76,104,54],[83750,69,104,54],[83756,72,104,54],[83762,76,104,54],[84500,69,104,48],[84506,72,104,48],[84512,75,104,48],[85000,69,104,48],[85006,72,104,48],[85012,75,104,48],[85750,69,104,48],[85756,72,104,48],[85762,75,104,48],[86500,69,104,48],[86506,72,104,48],[86512,75,104,48],[87000,69,104,48],[87006,72,104,48],[87012,75,104,48],[87750,69,104,48],[87756,72,104,48],[87762,75,104,48],[88500,67,104,51],[88506,71,104,51],[88512,74,104,51],[89000,67,104,51],[89006,71,104,51],[89012,74,104,51],[89750,67,104,51],[89756,71,104,51],[89762,74,104,51],[90500,67,104,51],[90506,71,104,51],[90512,74,104,51],[91000,67,104,51],[91006,71,104,51],[91012,74,104,51],[91750,67,104,51],[91756,71,104,51],[91762,74,104,51],[92500,67,104,54],[92506,70,104,54],[92512,73,104,54],[93000,67,104,54],[93006,70,104,54],[93012,73,104,54],[93750,67,104,54],[93756,70,104,54],[93762,73,104,54],[94500,67,104,54],[94506,70,104,54],[94512,73,104,54],[95000,67,104,54],[95006,70,104,54],[95012,73,104,54],[95750,67,104,54],[95756,70,104,54],[95762,73,104,54],[96500,69,104,48],[96506,72,104,48],[96512,76,104,48],[97000,69,104,48],[97006,72,104,48],[97012,76,104,48],[97750,69,104,48],[97756,72,104,48],[97762,76,104,48],[98500,69,104,48],[98506,72,104,48],[98512,76,104,48],[99000,69,104,48],[99006,72,104,48],[99012,76,104,48],[99750,69,104,48],[99756,72,104,48],[99762,76,104,48],[100500,65,104,51],[100506,69,104,51],[100512,71,104,51],[101000,65,104,51],[101006,69,104,51],[101012,71,104,51],[101750,65,104,51],[101756,69,104,51],[101762,71,104,51],[102500,65,104,51],[102506,69,104,51],[102512,71,104,51],[103000,65,104,51],[103006,69,104,51],[103012,71,104,51],[103750,65,104,51],[103756,69,104,51],[103762,71,104,51],[104500,67,104,54],[104506,71,104,54],[104512,74,104,54],[105000,67,104,54],[105006,71,104,54],[105012,74,104,54],[105750,67,104,54],[105756,71,104,54],[105762,74,104,54],[106500,67,104,54],[106506,71,104,54],[106512,74,104,54],[107000,67,104,54],[107006,71,104,54],[107012,74,104,54],[107750,67,104,54],[107756,71,104,54],[107762,74,104,54],[108500,67,104,48],[108506,71,104,48],[108512,72,104,48],[109000,67,104,48],[109006,71,104,48],[109012,72,104,48],[109750,67,104,48],[109756,71,104,48],[109762,72,104,48],[110500,67,104,48],[110506,71,104,48],[110512,72,104,48],[111000,67,104,48],[111006,71,104,48],[111012,72,104,48],[111750,67,104,48],[111756,71,104,48],[111762,72,104,48],[112500,69,104,51],[112506,72,104,51],[112512,76,104,51],[113000,69,104,51],[113006,72,104,51],[113012,76,104,51],[113750,69,104,51],[113756,72,104,51],[113762,76,104,51],[114500,69,104,51],[114506,72,104,51],[114512,76,104,51],[115000,69,104,51],[115006,72,104,51],[115012,76,104,51],[115750,69,104,51],[115756,72,104,51],[115762,76,104,51],[116500,65,104,54],[116506,69,104,54],[116512,71,104,54],[117000,65,104,54],[117006,69,104,54],[117012,71,104,54],[117750,65,104,54],[117756,69,104,54],[117762,71,104,54],[118500,65,104,54],[118506,69,104,54],[118512,71,104,54],[119000,65,104,54],[119006,69,104,54],[119012,71,104,54],[119750,65,104,54],[119756,69,104,54],[119762,71,104,54],[120500,67,104,48],[120506,71,104,48],[120512,74,104,48],[121000,67,104,48],[121006,71,104,48],[121012,74,104,48],[121750,67,104,48],[121756,71,104,48],[121762,74,104,48],[122500,67,104,48],[122506,71,104,48],[122512,74,104,48],[123000,67,104,48],[123006,71,104,48],[123012,74,104,48],[123750,67,104,48],[123756,71,104,48],[123762,74,104,48],[124500,67,104,51],[124506,70,104,51],[124512,73,104,51],[125000,67,104,51],[125006,70,104,51],[125012,73,104,51],[125750,67,104,51],[125756,70,104,51],[125762,73,104,51],[126500,67,104,51],[126506,70,104,51],[126512,73,104,51],[127000,67,104,51],[127006,70,104,51],[127012,73,104,51],[127750,67,104,51],[127756,70,104,51],[127762,73,104,51]],
+  pad: [[0,57,3950,36],[0,60,3950,36],[0,64,3950,36],[0,65,3950,36],[4000,53,3950,36],[4000,57,3950,36],[4000,59,3950,36],[4000,64,3950,36],[8000,55,3950,36],[8000,59,3950,36],[8000,62,3950,36],[8000,64,3950,36],[12000,55,3950,36],[12000,60,3950,36],[12000,64,3950,36],[12000,67,3950,36],[16000,57,3950,36],[16000,60,3950,36],[16000,64,3950,36],[16000,67,3950,36],[20000,57,3950,36],[20000,60,3950,36],[20000,63,3950,36],[20000,66,3950,36],[24000,55,3950,36],[24000,59,3950,36],[24000,62,3950,36],[24000,66,3950,36],[28000,55,3950,36],[28000,58,3950,36],[28000,61,3950,36],[28000,65,3950,36],[32000,57,3950,36],[32000,60,3950,36],[32000,64,3950,36],[32000,65,3950,36],[36000,53,3950,36],[36000,57,3950,36],[36000,59,3950,36],[36000,64,3950,36],[40000,55,3950,36],[40000,59,3950,36],[40000,62,3950,36],[40000,64,3950,36],[44000,55,3950,36],[44000,59,3950,36],[44000,60,3950,36],[44000,64,3950,36],[48000,57,3950,36],[48000,60,3950,36],[48000,64,3950,36],[48000,67,3950,36],[52000,53,3950,36],[52000,57,3950,36],[52000,59,3950,36],[52000,64,3950,36],[56000,55,3950,36],[56000,59,3950,36],[56000,62,3950,36],[56000,66,3950,36],[60000,55,3950,36],[60000,58,3950,36],[60000,61,3950,36],[60000,65,3950,36],[64000,57,3950,36],[64000,60,3950,36],[64000,64,3950,36],[64000,65,3950,36],[68000,53,3950,36],[68000,57,3950,36],[68000,59,3950,36],[68000,64,3950,36],[72000,55,3950,36],[72000,59,3950,36],[72000,62,3950,36],[72000,64,3950,36],[76000,55,3950,36],[76000,60,3950,36],[76000,64,3950,36],[76000,67,3950,36],[80000,57,3950,36],[80000,60,3950,36],[80000,64,3950,36],[80000,67,3950,36],[84000,57,3950,36],[84000,60,3950,36],[84000,63,3950,36],[84000,66,3950,36],[88000,55,3950,36],[88000,59,3950,36],[88000,62,3950,36],[88000,66,3950,36],[92000,55,3950,36],[92000,58,3950,36],[92000,61,3950,36],[92000,65,3950,36],[96000,57,3950,36],[96000,60,3950,36],[96000,64,3950,36],[96000,65,3950,36],[100000,53,3950,36],[100000,57,3950,36],[100000,59,3950,36],[100000,64,3950,36],[104000,55,3950,36],[104000,59,3950,36],[104000,62,3950,36],[104000,64,3950,36],[108000,55,3950,36],[108000,59,3950,36],[108000,60,3950,36],[108000,64,3950,36],[112000,57,3950,36],[112000,60,3950,36],[112000,64,3950,36],[112000,67,3950,36],[116000,53,3950,36],[116000,57,3950,36],[116000,59,3950,36],[116000,64,3950,36],[120000,55,3950,36],[120000,59,3950,36],[120000,62,3950,36],[120000,66,3950,36],[124000,55,3950,36],[124000,58,3950,36],[124000,61,3950,36],[124000,65,3950,36]],
+  mel: [[16000,72,500,49],[17000,76,450,49],[17500,79,750,49],[18500,76,500,49],[20000,75,500,49],[21000,78,500,49],[22000,75,750,49],[23000,72,500,49],[24000,71,750,49],[25000,74,500,49],[26000,78,750,49],[28000,77,500,49],[29000,73,500,49],[30000,70,500,49],[31000,69,750,49],[32000,76,500,49],[33000,74,450,49],[33500,72,750,49],[34500,69,500,49],[36000,71,500,49],[37000,74,750,49],[38000,76,500,49],[39000,74,500,49],[40000,79,750,49],[41000,76,500,49],[42000,74,500,49],[43000,72,500,49],[44000,71,750,49],[45500,69,450,49],[46000,67,1250,49],[48000,72,500,49],[49000,76,450,49],[49500,79,750,49],[50500,76,500,49],[52000,75,500,49],[53000,78,500,49],[54000,75,750,49],[55000,72,500,49],[56000,71,750,49],[57000,74,500,49],[58000,78,750,49],[64000,76,500,49],[65000,74,450,49],[65500,72,750,49],[66500,69,500,49],[68000,71,500,49],[69000,74,750,49],[70000,76,500,49],[71000,74,500,49],[72000,79,750,49],[73000,76,500,49],[74000,74,500,49],[75000,72,500,49],[76000,71,750,49],[77500,69,450,49],[78000,67,1250,49],[80000,72,500,49],[81000,76,450,49],[81500,79,750,49],[82500,76,500,49],[84000,75,500,49],[85000,78,500,49],[86000,75,750,49],[87000,72,500,49],[88000,71,750,49],[89000,74,500,49],[90000,78,750,49],[92000,77,500,49],[93000,73,500,49],[94000,70,500,49],[95000,69,750,49],[96000,76,500,49],[97000,74,450,49],[97500,72,750,49],[98500,69,500,49],[100000,71,500,49],[101000,74,750,49],[102000,76,500,49],[103000,74,500,49],[104000,79,750,49],[105000,76,500,49],[106000,74,500,49],[107000,72,500,49],[108000,71,750,49],[109500,69,450,49],[110000,67,1250,49],[112000,72,500,49],[113000,76,450,49],[113500,79,750,49],[114500,76,500,49],[116000,75,500,49],[117000,78,500,49],[118000,75,750,49],[119000,72,500,49],[120000,71,750,49],[121000,74,500,49],[122000,78,750,49]],
+  drum: [[0,36,160,104],[0,42,71,66],[525,42,71,50],[1000,38,171,87],[1000,39,79,42],[1000,42,71,66],[1500,36,160,78],[1525,42,71,50],[2000,36,160,97],[2000,42,71,66],[2525,42,71,50],[2750,36,160,67],[3000,38,171,87],[3000,39,79,42],[3000,42,71,66],[3525,42,71,50],[4000,36,160,104],[4000,42,71,66],[4525,42,71,50],[5000,38,171,87],[5000,39,79,42],[5000,42,71,66],[5500,36,160,78],[5525,42,71,50],[6000,36,160,97],[6000,42,71,66],[6525,42,71,50],[6750,36,160,67],[7000,38,171,87],[7000,39,79,42],[7000,42,71,66],[7525,42,71,50],[8000,36,160,104],[8000,42,71,66],[8525,42,71,50],[9000,38,171,87],[9000,39,79,42],[9000,42,71,66],[9500,36,160,78],[9525,42,71,50],[10000,36,160,97],[10000,42,71,66],[10525,42,71,50],[10750,36,160,67],[11000,38,171,87],[11000,39,79,42],[11000,42,71,66],[11525,42,71,50],[12000,36,160,104],[12000,42,71,66],[12525,42,71,50],[13000,38,171,87],[13000,39,79,42],[13000,42,71,66],[13500,36,160,78],[13525,42,71,50],[14000,36,160,97],[14000,42,71,66],[14525,42,71,50],[14750,36,160,67],[15000,38,171,87],[15000,39,79,42],[15000,42,71,66],[15525,42,71,50],[16000,36,160,104],[16000,42,71,66],[16525,42,71,50],[17000,38,171,87],[17000,39,79,42],[17000,42,71,66],[17500,36,160,78],[17525,42,71,50],[18000,36,160,97],[18000,42,71,66],[18525,42,71,50],[18750,36,160,67],[19000,38,171,87],[19000,39,79,42],[19000,42,71,66],[19525,42,71,50],[20000,36,160,104],[20000,42,71,66],[20525,42,71,50],[21000,38,171,87],[21000,39,79,42],[21000,42,71,66],[21500,36,160,78],[21525,42,71,50],[22000,36,160,97],[22000,42,71,66],[22525,42,71,50],[22750,36,160,67],[23000,38,171,87],[23000,39,79,42],[23000,42,71,66],[23525,42,71,50],[24000,36,160,104],[24000,42,71,66],[24525,42,71,50],[25000,38,171,87],[25000,39,79,42],[25000,42,71,66],[25500,36,160,78],[25525,42,71,50],[26000,36,160,97],[26000,42,71,66],[26525,42,71,50],[26750,36,160,67],[27000,38,171,87],[27000,39,79,42],[27000,42,71,66],[27525,42,71,50],[28000,36,160,104],[28000,42,71,66],[28525,42,71,50],[29000,38,171,87],[29000,39,79,42],[29000,42,71,66],[29500,36,160,78],[29525,42,71,50],[30000,36,160,97],[30000,42,71,66],[30525,42,71,50],[30750,36,160,67],[31000,38,171,87],[31000,39,79,42],[31000,42,71,66],[31250,38,129,65],[31500,45,129,65],[31525,42,71,50],[31750,47,129,65],[32000,36,160,104],[32000,42,71,66],[32525,42,71,50],[33000,38,171,87],[33000,39,79,42],[33000,42,71,66],[33500,36,160,78],[33525,42,71,50],[34000,36,160,97],[34000,42,71,66],[34525,42,71,50],[34750,36,160,67],[35000,38,171,87],[35000,39,79,42],[35000,42,71,66],[35525,42,71,50],[36000,36,160,104],[36000,42,71,66],[36525,42,71,50],[37000,38,171,87],[37000,39,79,42],[37000,42,71,66],[37500,36,160,78],[37525,42,71,50],[38000,36,160,97],[38000,42,71,66],[38525,42,71,50],[38750,36,160,67],[39000,38,171,87],[39000,39,79,42],[39000,42,71,66],[39525,42,71,50],[40000,36,160,104],[40000,42,71,66],[40525,42,71,50],[41000,38,171,87],[41000,39,79,42],[41000,42,71,66],[41500,36,160,78],[41525,42,71,50],[42000,36,160,97],[42000,42,71,66],[42525,42,71,50],[42750,36,160,67],[43000,38,171,87],[43000,39,79,42],[43000,42,71,66],[43525,42,71,50],[44000,36,160,104],[44000,42,71,66],[44525,42,71,50],[45000,38,171,87],[45000,39,79,42],[45000,42,71,66],[45500,36,160,78],[45525,42,71,50],[46000,36,160,97],[46000,42,71,66],[46525,42,71,50],[46750,36,160,67],[47000,38,171,87],[47000,39,79,42],[47000,42,71,66],[47525,42,71,50],[48000,36,160,104],[48000,42,71,66],[48525,42,71,50],[49000,38,171,87],[49000,39,79,42],[49000,42,71,66],[49500,36,160,78],[49525,42,71,50],[50000,36,160,97],[50000,42,71,66],[50525,42,71,50],[50750,36,160,67],[51000,38,171,87],[51000,39,79,42],[51000,42,71,66],[51525,42,71,50],[52000,36,160,104],[52000,42,71,66],[52525,42,71,50],[53000,38,171,87],[53000,39,79,42],[53000,42,71,66],[53500,36,160,78],[53525,42,71,50],[54000,36,160,97],[54000,42,71,66],[54525,42,71,50],[54750,36,160,67],[55000,38,171,87],[55000,39,79,42],[55000,42,71,66],[55525,42,71,50],[56000,36,160,104],[56000,42,71,66],[56525,42,71,50],[57000,38,171,87],[57000,39,79,42],[57000,42,71,66],[57500,36,160,78],[57525,42,71,50],[58000,36,160,97],[58000,42,71,66],[58525,42,71,50],[58750,36,160,67],[59000,38,171,87],[59000,39,79,42],[59000,42,71,66],[59525,42,71,50],[60000,36,160,104],[60000,42,71,66],[60525,42,71,50],[61000,38,171,87],[61000,39,79,42],[61000,42,71,66],[61500,36,160,78],[61525,42,71,50],[62000,36,160,97],[62000,42,71,66],[62525,42,71,50],[62750,36,160,67],[63000,38,171,87],[63000,39,79,42],[63000,42,71,66],[63250,38,129,65],[63500,45,129,65],[63525,42,71,50],[63750,47,129,65],[64000,36,160,104],[64000,42,71,66],[64525,42,71,50],[65000,38,171,87],[65000,39,79,42],[65000,42,71,66],[65500,36,160,78],[65525,42,71,50],[66000,36,160,97],[66000,42,71,66],[66525,42,71,50],[66750,36,160,67],[67000,38,171,87],[67000,39,79,42],[67000,42,71,66],[67525,42,71,50],[68000,36,160,104],[68000,42,71,66],[68525,42,71,50],[69000,38,171,87],[69000,39,79,42],[69000,42,71,66],[69500,36,160,78],[69525,42,71,50],[70000,36,160,97],[70000,42,71,66],[70525,42,71,50],[70750,36,160,67],[71000,38,171,87],[71000,39,79,42],[71000,42,71,66],[71525,42,71,50],[72000,36,160,104],[72000,42,71,66],[72525,42,71,50],[73000,38,171,87],[73000,39,79,42],[73000,42,71,66],[73500,36,160,78],[73525,42,71,50],[74000,36,160,97],[74000,42,71,66],[74525,42,71,50],[74750,36,160,67],[75000,38,171,87],[75000,39,79,42],[75000,42,71,66],[75525,42,71,50],[76000,36,160,104],[76000,42,71,66],[76525,42,71,50],[77000,38,171,87],[77000,39,79,42],[77000,42,71,66],[77500,36,160,78],[77525,42,71,50],[78000,36,160,97],[78000,42,71,66],[78525,42,71,50],[78750,36,160,67],[79000,38,171,87],[79000,39,79,42],[79000,42,71,66],[79525,42,71,50],[80000,36,160,104],[80000,42,71,66],[80525,42,71,50],[81000,38,171,87],[81000,39,79,42],[81000,42,71,66],[81500,36,160,78],[81525,42,71,50],[82000,36,160,97],[82000,42,71,66],[82525,42,71,50],[82750,36,160,67],[83000,38,171,87],[83000,39,79,42],[83000,42,71,66],[83525,42,71,50],[84000,36,160,104],[84000,42,71,66],[84525,42,71,50],[85000,38,171,87],[85000,39,79,42],[85000,42,71,66],[85500,36,160,78],[85525,42,71,50],[86000,36,160,97],[86000,42,71,66],[86525,42,71,50],[86750,36,160,67],[87000,38,171,87],[87000,39,79,42],[87000,42,71,66],[87525,42,71,50],[88000,36,160,104],[88000,42,71,66],[88525,42,71,50],[89000,38,171,87],[89000,39,79,42],[89000,42,71,66],[89500,36,160,78],[89525,42,71,50],[90000,36,160,97],[90000,42,71,66],[90525,42,71,50],[90750,36,160,67],[91000,38,171,87],[91000,39,79,42],[91000,42,71,66],[91525,42,71,50],[92000,36,160,104],[92000,42,71,66],[92525,42,71,50],[93000,38,171,87],[93000,39,79,42],[93000,42,71,66],[93500,36,160,78],[93525,42,71,50],[94000,36,160,97],[94000,42,71,66],[94525,42,71,50],[94750,36,160,67],[95000,38,171,87],[95000,39,79,42],[95000,42,71,66],[95250,38,129,65],[95500,45,129,65],[95525,42,71,50],[95750,47,129,65],[96000,36,160,104],[96000,42,71,66],[96525,42,71,50],[97000,38,171,87],[97000,39,79,42],[97000,42,71,66],[97500,36,160,78],[97525,42,71,50],[98000,36,160,97],[98000,42,71,66],[98525,42,71,50],[98750,36,160,67],[99000,38,171,87],[99000,39,79,42],[99000,42,71,66],[99525,42,71,50],[100000,36,160,104],[100000,42,71,66],[100525,42,71,50],[101000,38,171,87],[101000,39,79,42],[101000,42,71,66],[101500,36,160,78],[101525,42,71,50],[102000,36,160,97],[102000,42,71,66],[102525,42,71,50],[102750,36,160,67],[103000,38,171,87],[103000,39,79,42],[103000,42,71,66],[103525,42,71,50],[104000,36,160,104],[104000,42,71,66],[104525,42,71,50],[105000,38,171,87],[105000,39,79,42],[105000,42,71,66],[105500,36,160,78],[105525,42,71,50],[106000,36,160,97],[106000,42,71,66],[106525,42,71,50],[106750,36,160,67],[107000,38,171,87],[107000,39,79,42],[107000,42,71,66],[107525,42,71,50],[108000,36,160,104],[108000,42,71,66],[108525,42,71,50],[109000,38,171,87],[109000,39,79,42],[109000,42,71,66],[109500,36,160,78],[109525,42,71,50],[110000,36,160,97],[110000,42,71,66],[110525,42,71,50],[110750,36,160,67],[111000,38,171,87],[111000,39,79,42],[111000,42,71,66],[111525,42,71,50],[112000,36,160,104],[112000,42,71,66],[112525,42,71,50],[113000,38,171,87],[113000,39,79,42],[113000,42,71,66],[113500,36,160,78],[113525,42,71,50],[114000,36,160,97],[114000,42,71,66],[114525,42,71,50],[114750,36,160,67],[115000,38,171,87],[115000,39,79,42],[115000,42,71,66],[115525,42,71,50],[116000,36,160,104],[116000,42,71,66],[116525,42,71,50],[117000,38,171,87],[117000,39,79,42],[117000,42,71,66],[117500,36,160,78],[117525,42,71,50],[118000,36,160,97],[118000,42,71,66],[118525,42,71,50],[118750,36,160,67],[119000,38,171,87],[119000,39,79,42],[119000,42,71,66],[119525,42,71,50],[120000,36,160,104],[120000,42,71,66],[120525,42,71,50],[121000,38,171,87],[121000,39,79,42],[121000,42,71,66],[121500,36,160,78],[121525,42,71,50],[122000,36,160,97],[122000,42,71,66],[122525,42,71,50],[122750,36,160,67],[123000,38,171,87],[123000,39,79,42],[123000,42,71,66],[123525,42,71,50],[124000,36,160,104],[124000,42,71,66],[124525,42,71,50],[125000,38,171,87],[125000,39,79,42],[125000,42,71,66],[125500,36,160,78],[125525,42,71,50],[126000,36,160,97],[126000,42,71,66],[126525,42,71,50],[126750,36,160,67],[127000,38,171,87],[127000,39,79,42],[127000,42,71,66],[127250,38,129,65],[127500,45,129,65],[127525,42,71,50],[127750,47,129,65]],
+  hep: [[14500,79,421,53],[14750,76,421,53],[15000,72,421,53],[15250,67,421,53],[30500,77,421,53],[30750,73,421,53],[31000,70,421,53],[31250,67,421,53],[46500,76,421,53],[46750,72,421,53],[47000,71,421,53],[47250,67,421,53],[62500,77,421,53],[62750,73,421,53],[63000,70,421,53],[63250,67,421,53],[78500,79,421,53],[78750,76,421,53],[79000,72,421,53],[79250,67,421,53],[94500,77,421,53],[94750,73,421,53],[95000,70,421,53],[95250,67,421,53],[110500,76,421,53],[110750,72,421,53],[111000,71,421,53],[111250,67,421,53],[126500,77,421,53],[126750,73,421,53],[127000,70,421,53],[127250,67,421,53]],
+};
+const MIDI_YOKO = {   // Yokohama Station のBGM: yokohama_night_developed.mid を、そのまま埋め込んだもの。[開始(拍×1000), ノート番号, 長さ(拍×1000), ベロシティ]
+  bpm: 162.0, len: 192, gain: 1.34, mix: {drum:1.7, bass:1.2, ep:1.6, gtr:1.6},    // ドラムとベースを前に出したバランス。全体の音量は、Minato Mirai に合わせた(RMS 約 -33dB)
+  
+  ep: [[0,56,600,42],[0,60,600,42],[0,63,600,42],[0,67,600,42],[2500,56,350,42],[2500,60,350,42],[2500,63,350,42],[2500,67,350,42],[5000,56,400,42],[5000,60,400,42],[5000,63,400,42],[5000,65,400,42],[7000,56,400,42],[7000,60,400,42],[7000,63,400,42],[7000,65,400,42],[8000,56,600,42],[8000,61,600,42],[8000,65,600,42],[8000,68,600,42],[10500,56,350,42],[10500,61,350,42],[10500,65,350,42],[10500,68,350,42],[13000,58,400,42],[13000,61,400,42],[13000,64,400,42],[13000,68,400,42],[15000,58,400,42],[15000,61,400,42],[15000,64,400,42],[15000,68,400,42],[16000,56,600,42],[16000,60,600,42],[16000,63,600,42],[16000,67,600,42],[18500,56,350,42],[18500,60,350,42],[18500,63,350,42],[18500,67,350,42],[21000,56,400,42],[21000,60,400,42],[21000,63,400,42],[21000,65,400,42],[23000,56,400,42],[23000,60,400,42],[23000,63,400,42],[23000,65,400,42],[24000,58,600,42],[24000,61,600,42],[24000,65,600,42],[24000,68,600,42],[26500,58,350,42],[26500,61,350,42],[26500,65,350,42],[26500,68,350,42],[29000,58,400,42],[29000,61,400,42],[29000,64,400,42],[29000,67,400,42],[31000,58,400,42],[31000,61,400,42],[31000,64,400,42],[31000,67,400,42],[32000,55,600,42],[32000,60,600,42],[32000,63,600,42],[32000,67,600,42],[34500,55,350,42],[34500,60,350,42],[34500,63,350,42],[34500,67,350,42],[37000,56,400,42],[37000,60,400,42],[37000,63,400,42],[37000,65,400,42],[39000,56,400,42],[39000,60,400,42],[39000,63,400,42],[39000,65,400,42],[40000,56,600,42],[40000,61,600,42],[40000,65,600,42],[40000,68,600,42],[42500,56,350,42],[42500,61,350,42],[42500,65,350,42],[42500,68,350,42],[45000,58,400,42],[45000,61,400,42],[45000,64,400,42],[45000,67,400,42],[47000,58,400,42],[47000,61,400,42],[47000,64,400,42],[47000,67,400,42],[48000,58,600,42],[48000,61,600,42],[48000,65,600,42],[48000,68,600,42],[50500,58,350,42],[50500,61,350,42],[50500,65,350,42],[50500,68,350,42],[53000,58,400,42],[53000,61,400,42],[53000,64,400,42],[53000,67,400,42],[55000,58,400,42],[55000,61,400,42],[55000,64,400,42],[55000,67,400,42],[56000,56,600,42],[56000,60,600,42],[56000,63,600,42],[56000,67,600,42],[58500,56,350,42],[58500,60,350,42],[58500,63,350,42],[58500,67,350,42],[61000,58,400,42],[61000,61,400,42],[61000,64,400,42],[61000,67,400,42],[63000,58,400,42],[63000,61,400,42],[63000,64,400,42],[63000,67,400,42],[64000,56,600,42],[64000,60,600,42],[64000,63,600,42],[64000,65,600,42],[66500,56,350,42],[66500,60,350,42],[66500,63,350,42],[66500,65,350,42],[69000,55,400,42],[69000,60,400,42],[69000,63,400,42],[69000,67,400,42],[71000,55,400,42],[71000,60,400,42],[71000,63,400,42],[71000,67,400,42],[72000,56,600,42],[72000,61,600,42],[72000,65,600,42],[72000,68,600,42],[74500,56,350,42],[74500,61,350,42],[74500,65,350,42],[74500,68,350,42],[77000,56,400,42],[77000,60,400,42],[77000,63,400,42],[77000,67,400,42],[79000,56,400,42],[79000,60,400,42],[79000,63,400,42],[79000,67,400,42],[80000,58,600,42],[80000,61,600,42],[80000,65,600,42],[80000,68,600,42],[82500,58,350,42],[82500,61,350,42],[82500,65,350,42],[82500,68,350,42],[85000,58,400,42],[85000,61,400,42],[85000,64,400,42],[85000,67,400,42],[87000,58,400,42],[87000,61,400,42],[87000,64,400,42],[87000,67,400,42],[88000,56,600,42],[88000,61,600,42],[88000,65,600,42],[88000,68,600,42],[90500,56,350,42],[90500,61,350,42],[90500,65,350,42],[90500,68,350,42],[93000,58,400,42],[93000,61,400,42],[93000,64,400,42],[93000,67,400,42],[95000,58,400,42],[95000,61,400,42],[95000,64,400,42],[95000,67,400,42],[96500,58,300,42],[96500,61,300,42],[96500,65,300,42],[96500,68,300,42],[98000,58,400,42],[98000,61,400,42],[98000,65,400,42],[98000,68,400,42],[99500,58,250,42],[99500,61,250,42],[99500,65,250,42],[99500,68,250,42],[100500,58,300,42],[100500,61,300,42],[100500,64,300,42],[100500,67,300,42],[102000,58,400,42],[102000,61,400,42],[102000,64,400,42],[102000,67,400,42],[103500,58,250,42],[103500,61,250,42],[103500,64,250,42],[103500,67,250,42],[104500,56,300,42],[104500,61,300,42],[104500,65,300,42],[104500,68,300,42],[106000,56,400,42],[106000,61,400,42],[106000,65,400,42],[106000,68,400,42],[107500,56,250,42],[107500,61,250,42],[107500,65,250,42],[107500,68,250,42],[108500,58,300,42],[108500,61,300,42],[108500,64,300,42],[108500,67,300,42],[110000,58,400,42],[110000,61,400,42],[110000,64,400,42],[110000,67,400,42],[111500,58,250,42],[111500,61,250,42],[111500,64,250,42],[111500,67,250,42],[112500,56,300,42],[112500,60,300,42],[112500,63,300,42],[112500,65,300,42],[114000,56,400,42],[114000,60,400,42],[114000,63,400,42],[114000,65,400,42],[115500,56,250,42],[115500,60,250,42],[115500,63,250,42],[115500,65,250,42],[116500,55,300,42],[116500,60,300,42],[116500,63,300,42],[116500,67,300,42],[118000,55,400,42],[118000,60,400,42],[118000,63,400,42],[118000,67,400,42],[119500,55,250,42],[119500,60,250,42],[119500,63,250,42],[119500,67,250,42],[120500,56,300,42],[120500,61,300,42],[120500,65,300,42],[120500,68,300,42],[122000,56,400,42],[122000,61,400,42],[122000,65,400,42],[122000,68,400,42],[123500,56,250,42],[123500,61,250,42],[123500,65,250,42],[123500,68,250,42],[124500,56,300,42],[124500,60,300,42],[124500,63,300,42],[124500,67,300,42],[126000,56,400,42],[126000,60,400,42],[126000,63,400,42],[126000,67,400,42],[127500,56,250,42],[127500,60,250,42],[127500,63,250,42],[127500,67,250,42],[128000,55,1200,42],[128000,60,1200,42],[128000,63,1200,42],[128000,67,1200,42],[132000,56,1200,42],[132000,60,1200,42],[132000,63,1200,42],[132000,65,1200,42],[136000,56,1200,42],[136000,61,1200,42],[136000,65,1200,42],[136000,68,1200,42],[140000,58,1200,42],[140000,61,1200,42],[140000,64,1200,42],[140000,67,1200,42],[144000,58,1200,42],[144000,61,1200,42],[144000,65,1200,42],[144000,68,1200,42],[148000,58,1200,42],[148000,61,1200,42],[148000,64,1200,42],[148000,67,1200,42],[152000,56,1200,42],[152000,60,1200,42],[152000,63,1200,42],[152000,67,1200,42],[156000,58,1200,42],[156000,61,1200,42],[156000,64,1200,42],[156000,67,1200,42],[160000,56,600,42],[160000,60,600,42],[160000,63,600,42],[160000,67,600,42],[162500,56,350,42],[162500,60,350,42],[162500,63,350,42],[162500,67,350,42],[165000,56,400,42],[165000,60,400,42],[165000,63,400,42],[165000,65,400,42],[167000,56,400,42],[167000,60,400,42],[167000,63,400,42],[167000,65,400,42],[168000,56,600,42],[168000,61,600,42],[168000,65,600,42],[168000,68,600,42],[170500,56,350,42],[170500,61,350,42],[170500,65,350,42],[170500,68,350,42],[173000,58,400,42],[173000,61,400,42],[173000,64,400,42],[173000,68,400,42],[175000,58,400,42],[175000,61,400,42],[175000,64,400,42],[175000,68,400,42],[176000,56,600,42],[176000,60,600,42],[176000,63,600,42],[176000,67,600,42],[178500,56,350,42],[178500,60,350,42],[178500,63,350,42],[178500,67,350,42],[181000,56,400,42],[181000,60,400,42],[181000,63,400,42],[181000,65,400,42],[183000,56,400,42],[183000,60,400,42],[183000,63,400,42],[183000,65,400,42],[184000,58,600,42],[184000,61,600,42],[184000,65,600,42],[184000,68,600,42],[186500,58,350,42],[186500,61,350,42],[186500,65,350,42],[186500,68,350,42],[189000,58,400,42],[189000,61,400,42],[189000,64,400,42],[189000,67,400,42],[191000,58,400,42],[191000,61,400,42],[191000,64,400,42],[191000,67,400,42]],
+  bass: [[0,41,800,80],[1000,44,700,80],[2000,48,800,80],[3000,40,650,80],[4000,41,800,83],[5000,44,700,83],[6000,48,800,83],[7000,47,650,83],[8000,46,800,86],[9000,49,700,86],[10000,53,800,86],[11000,47,650,86],[12000,48,800,80],[13000,52,700,80],[14000,55,800,80],[15000,42,650,80],[16000,41,800,83],[17000,44,700,83],[18000,48,800,83],[19000,48,650,83],[20000,49,800,86],[21000,53,700,86],[22000,56,800,86],[23000,44,650,86],[24000,43,800,80],[25000,46,700,80],[26000,50,800,80],[27000,47,650,80],[28000,48,800,83],[29000,52,700,83],[30000,55,800,83],[31000,45,650,83],[32000,44,800,86],[33000,48,700,86],[34000,51,800,86],[35000,48,650,86],[36000,49,800,80],[37000,53,700,80],[38000,56,800,80],[39000,47,650,80],[40000,46,800,83],[41000,49,700,83],[42000,53,800,83],[43000,47,650,83],[44000,48,800,86],[45000,52,700,86],[46000,55,800,86],[47000,44,650,86],[48000,43,800,80],[49000,46,700,80],[50000,50,800,80],[51000,47,650,80],[52000,48,800,83],[53000,52,700,83],[54000,55,800,83],[55000,42,650,83],[56000,41,800,86],[57000,44,700,86],[58000,48,800,86],[59000,47,650,86],[60000,48,800,80],[61000,52,700,80],[62000,55,800,80],[63000,50,650,80],[64000,49,700,83],[65000,56,400,83],[65500,61,350,83],[66000,53,700,83],[67000,43,650,83],[68000,44,700,86],[69000,51,400,86],[69500,56,350,86],[70000,48,700,86],[71000,45,650,86],[72000,46,700,80],[73000,53,400,80],[73500,58,350,80],[74000,49,700,80],[75000,40,650,80],[76000,41,700,83],[77000,48,400,83],[77500,53,350,83],[78000,44,700,83],[79000,42,650,83],[80000,43,700,86],[81000,50,400,86],[81500,55,350,86],[82000,46,700,86],[83000,47,650,86],[84000,48,700,80],[85000,55,400,80],[85500,60,350,80],[86000,52,700,80],[87000,45,650,80],[88000,46,700,83],[89000,53,400,83],[89500,58,350,83],[90000,49,700,83],[91000,47,650,83],[92000,48,700,86],[93000,55,400,86],[93500,60,350,86],[94000,52,700,86],[95000,42,650,86],[96000,43,700,80],[97000,50,400,80],[97500,55,350,80],[98000,46,700,80],[99000,47,650,80],[100000,48,700,83],[101000,55,400,83],[101500,60,350,83],[102000,52,700,83],[103000,45,650,83],[104000,46,700,86],[105000,53,400,86],[105500,58,350,86],[106000,49,700,86],[107000,47,650,86],[108000,48,700,80],[109000,55,400,80],[109500,60,350,80],[110000,52,700,80],[111000,48,650,80],[112000,49,700,83],[113000,56,400,83],[113500,61,350,83],[114000,53,700,83],[115000,43,650,83],[116000,44,700,86],[117000,51,400,86],[117500,56,350,86],[118000,48,700,86],[119000,45,650,86],[120000,46,700,80],[121000,53,400,80],[121500,58,350,80],[122000,49,700,80],[123000,40,650,80],[124000,41,700,83],[125000,48,400,83],[125500,53,350,83],[126000,44,700,83],[127000,43,650,83],[128000,44,1500,86],[130000,51,1300,86],[132000,49,1500,80],[134000,56,1300,80],[136000,46,1500,83],[138000,53,1300,83],[140000,48,1500,86],[142000,55,1300,86],[144000,43,1500,80],[146000,50,1300,80],[148000,48,1500,83],[150000,55,1300,83],[152000,41,1500,86],[154000,48,1300,86],[156000,48,1500,80],[158000,55,1300,80],[160000,41,800,83],[161000,44,700,83],[162000,48,800,83],[163000,40,650,83],[164000,41,800,86],[165000,44,700,86],[166000,48,800,86],[167000,47,650,86],[168000,46,800,80],[169000,49,700,80],[170000,53,800,80],[171000,47,650,80],[172000,48,800,83],[173000,52,700,83],[174000,55,800,83],[175000,42,650,83],[176000,41,800,86],[177000,44,700,86],[178000,48,800,86],[179000,48,650,86],[180000,49,800,80],[181000,53,700,80],[182000,56,800,80],[183000,44,650,80],[184000,43,800,83],[185000,46,700,83],[186000,50,800,83],[187000,47,650,83],[188000,48,800,86],[189000,52,700,86],[190000,55,800,86],[191000,42,650,86]],
+  gtr: [[0,56,300,60],[1000,63,350,60],[2500,60,450,60],[8000,65,450,60],[10000,61,300,60],[10500,56,300,60],[11500,61,300,60],[16000,56,300,60],[16500,60,300,60],[17500,63,450,60],[19000,60,500,60],[24500,58,450,60],[26000,65,300,60],[27000,61,400,60],[32000,63,450,60],[34000,60,300,60],[34500,55,300,60],[35500,60,300,60],[37000,60,500,60],[38500,56,550,60],[40000,56,300,60],[40500,61,300,60],[41500,65,450,60],[43000,61,500,60],[44000,64,650,60],[46000,58,650,60],[48500,58,450,60],[50000,65,300,60],[51000,61,400,60],[52000,61,350,60],[53500,58,350,60],[56000,56,300,60],[57000,63,350,60],[58500,60,450,60],[60500,61,300,60],[61500,58,300,60],[63000,64,550,60],[64000,63,300,60],[64500,60,300,60],[65500,56,450,60],[67000,60,500,60],[68000,55,650,60],[70000,63,650,60],[72500,65,450,60],[74000,56,300,60],[75000,61,400,60],[76000,60,350,60],[77500,63,350,60],[80000,65,300,60],[81000,58,350,60],[82500,61,450,60],[84500,61,300,60],[85500,64,300,60],[87000,58,550,60],[88000,56,450,60],[90000,61,300,60],[90500,65,300,60],[91500,61,300,60],[93000,61,500,60],[94500,64,550,60],[96500,77,450,54],[98000,70,300,54],[99000,73,400,54],[100000,73,350,54],[101500,76,350,54],[104000,77,300,54],[105000,68,350,54],[106500,73,450,54],[108500,73,300,54],[109500,76,300,54],[111000,70,550,54],[112000,68,450,54],[114000,72,300,54],[114500,75,300,54],[115500,72,300,54],[117000,72,500,54],[118500,75,550,54],[120000,77,300,54],[120500,73,300,54],[121500,68,450,54],[123000,73,500,54],[124000,68,650,54],[126000,75,650,54],[128000,55,600,47],[130000,63,600,47],[136000,56,600,47],[138000,65,600,47],[144000,58,600,47],[146000,65,600,47],[152000,56,600,47],[154000,63,600,47],[160000,63,450,60],[162000,60,300,60],[162500,56,300,60],[163500,60,300,60],[165000,60,500,60],[166500,56,550,60],[168000,56,300,60],[168500,61,300,60],[169500,65,450,60],[171000,61,500,60],[172000,64,650,60],[174000,58,650,60],[176500,56,450,60],[178000,63,300,60],[179000,60,400,60],[180000,60,350,60],[181500,56,350,60],[184000,58,300,60],[185000,65,350,60],[186500,61,450,60],[188500,61,300,60],[189500,58,300,60],[191000,64,550,60]],
+  drum: [[0,36,129,76],[0,42,65,51],[1000,38,100,63],[1000,42,65,51],[2000,36,129,70],[2000,42,65,51],[3000,38,100,63],[3000,42,65,51],[4000,36,129,76],[4000,42,65,51],[5000,38,100,63],[5000,42,65,51],[6000,36,129,70],[6000,42,65,51],[7000,38,100,63],[7000,42,65,51],[8000,36,129,76],[8000,42,65,51],[9000,38,100,63],[9000,42,65,51],[10000,36,129,70],[10000,42,65,51],[11000,38,100,63],[11000,42,65,51],[12000,36,129,76],[12000,42,65,51],[13000,38,100,63],[13000,42,65,51],[14000,36,129,70],[14000,42,65,51],[15000,38,100,63],[15000,42,65,51],[16000,36,129,76],[16000,42,65,51],[16500,42,60,38],[17000,38,100,63],[17000,42,65,51],[17500,42,60,38],[18000,36,129,70],[18000,42,65,51],[18500,42,60,38],[19000,38,100,63],[19000,42,65,51],[19500,42,60,38],[20000,36,129,76],[20000,42,65,51],[20500,42,60,38],[21000,38,100,63],[21000,42,65,51],[21500,42,60,38],[22000,36,129,70],[22000,42,65,51],[22500,42,60,38],[23000,38,100,63],[23000,42,65,51],[23500,42,60,38],[24000,36,129,76],[24000,42,65,51],[24500,42,60,38],[25000,38,100,63],[25000,42,65,51],[25500,42,60,38],[26000,36,129,70],[26000,42,65,51],[26500,42,60,38],[27000,38,100,63],[27000,42,65,51],[27500,42,60,38],[28000,36,129,76],[28000,42,65,51],[28500,42,60,38],[29000,38,100,63],[29000,42,65,51],[29500,42,60,38],[30000,36,129,70],[30000,42,65,51],[30500,42,60,38],[31000,38,100,47],[31000,38,110,63],[31000,42,65,51],[31500,42,60,38],[31500,45,110,47],[32000,36,129,76],[32000,42,65,51],[32500,42,60,38],[33000,38,100,63],[33000,42,65,51],[33500,42,60,38],[34000,36,129,70],[34000,42,65,51],[34500,42,60,38],[35000,38,100,63],[35000,42,65,51],[35500,42,60,38],[36000,36,129,76],[36000,42,65,51],[36500,42,60,38],[37000,38,100,63],[37000,42,65,51],[37500,42,60,38],[38000,36,129,70],[38000,42,65,51],[38500,42,60,38],[39000,38,100,63],[39000,42,65,51],[39500,42,60,38],[40000,36,129,76],[40000,42,65,51],[40500,42,60,38],[41000,38,100,63],[41000,42,65,51],[41500,42,60,38],[42000,36,129,70],[42000,42,65,51],[42500,42,60,38],[43000,38,100,63],[43000,42,65,51],[43500,42,60,38],[44000,36,129,76],[44000,42,65,51],[44500,42,60,38],[45000,38,100,63],[45000,42,65,51],[45500,42,60,38],[46000,36,129,70],[46000,42,65,51],[46500,42,60,38],[47000,38,100,63],[47000,42,65,51],[47500,42,60,38],[48000,36,129,76],[48000,42,65,51],[48500,42,60,38],[49000,38,100,63],[49000,42,65,51],[49500,42,60,38],[50000,36,129,70],[50000,42,65,51],[50500,42,60,38],[51000,38,100,63],[51000,42,65,51],[51500,42,60,38],[52000,36,129,76],[52000,42,65,51],[52500,42,60,38],[53000,38,100,63],[53000,42,65,51],[53500,42,60,38],[54000,36,129,70],[54000,42,65,51],[54500,42,60,38],[55000,38,100,63],[55000,42,65,51],[55500,42,60,38],[56000,36,129,76],[56000,42,65,51],[56500,42,60,38],[57000,38,100,63],[57000,42,65,51],[57500,42,60,38],[58000,36,129,70],[58000,42,65,51],[58500,42,60,38],[59000,38,100,63],[59000,42,65,51],[59500,42,60,38],[60000,36,129,76],[60000,42,65,51],[60500,42,60,38],[61000,38,100,63],[61000,42,65,51],[61500,42,60,38],[62000,36,129,70],[62000,42,65,51],[62500,38,110,47],[62500,42,60,38],[63000,38,100,63],[63000,42,65,51],[63000,45,110,47],[63500,42,60,38],[63500,47,110,47],[64000,36,129,76],[64000,42,65,51],[64500,42,60,38],[65000,38,100,63],[65000,42,65,51],[65500,42,60,38],[66000,36,129,70],[66000,42,65,51],[66500,42,60,38],[67000,38,100,63],[67000,42,65,51],[67500,42,60,38],[68000,36,129,76],[68000,42,65,51],[68500,42,60,38],[69000,38,100,63],[69000,42,65,51],[69500,42,60,38],[70000,36,129,70],[70000,42,65,51],[70500,36,129,53],[70500,42,60,38],[71000,38,100,63],[71000,42,65,51],[71500,42,60,38],[72000,36,129,76],[72000,42,65,51],[72500,42,60,38],[73000,38,100,63],[73000,42,65,51],[73500,42,60,38],[74000,36,129,70],[74000,42,65,51],[74500,42,60,38],[75000,38,100,63],[75000,42,65,51],[75500,42,60,38],[76000,36,129,76],[76000,42,65,51],[76500,42,60,38],[77000,38,100,63],[77000,42,65,51],[77500,42,60,38],[78000,36,129,70],[78000,42,65,51],[78500,36,129,53],[78500,42,60,38],[79000,38,100,63],[79000,42,65,51],[79500,42,60,38],[80000,36,129,76],[80000,42,65,51],[80500,42,60,38],[81000,38,100,63],[81000,42,65,51],[81500,42,60,38],[82000,36,129,70],[82000,42,65,51],[82500,42,60,38],[83000,38,100,63],[83000,42,65,51],[83500,42,60,38],[84000,36,129,76],[84000,42,65,51],[84500,42,60,38],[85000,38,100,63],[85000,42,65,51],[85500,42,60,38],[86000,36,129,70],[86000,42,65,51],[86500,36,129,53],[86500,42,60,38],[87000,38,100,63],[87000,42,65,51],[87500,42,60,38],[88000,36,129,76],[88000,42,65,51],[88500,42,60,38],[89000,38,100,63],[89000,42,65,51],[89500,42,60,38],[90000,36,129,70],[90000,42,65,51],[90500,42,60,38],[91000,38,100,63],[91000,42,65,51],[91500,42,60,38],[92000,36,129,76],[92000,42,65,51],[92500,42,60,38],[93000,38,100,63],[93000,42,65,51],[93500,42,60,38],[94000,36,129,70],[94000,42,65,51],[94500,36,129,53],[94500,42,60,38],[95000,38,100,47],[95000,38,110,63],[95000,42,65,51],[95500,42,60,38],[95500,45,110,47],[96000,36,129,76],[96000,42,65,51],[96500,42,60,38],[97000,38,100,63],[97000,42,65,51],[97500,42,60,38],[98000,36,129,70],[98000,42,65,51],[98500,42,60,38],[99000,38,100,63],[99000,42,65,51],[99500,42,60,38],[100000,36,129,76],[100000,42,65,51],[100500,42,60,38],[101000,38,100,63],[101000,42,65,51],[101500,42,60,38],[102000,36,129,70],[102000,42,65,51],[102500,42,60,38],[103000,38,100,63],[103000,42,65,51],[103500,42,60,38],[104000,36,129,76],[104000,42,65,51],[104500,42,60,38],[105000,38,100,63],[105000,42,65,51],[105500,42,60,38],[106000,36,129,70],[106000,42,65,51],[106500,42,60,38],[107000,38,100,63],[107000,42,65,51],[107500,42,60,38],[108000,36,129,76],[108000,42,65,51],[108500,42,60,38],[109000,38,100,63],[109000,42,65,51],[109500,42,60,38],[110000,36,129,70],[110000,42,65,51],[110500,42,60,38],[111000,38,100,63],[111000,42,65,51],[111500,42,60,38],[112000,36,129,76],[112000,42,65,51],[112500,42,60,38],[113000,38,100,63],[113000,42,65,51],[113500,42,60,38],[114000,36,129,70],[114000,42,65,51],[114500,42,60,38],[115000,38,100,63],[115000,42,65,51],[115500,42,60,38],[116000,36,129,76],[116000,42,65,51],[116500,42,60,38],[117000,38,100,63],[117000,42,65,51],[117500,42,60,38],[118000,36,129,70],[118000,42,65,51],[118500,42,60,38],[119000,38,100,63],[119000,42,65,51],[119500,42,60,38],[120000,36,129,76],[120000,42,65,51],[120500,42,60,38],[121000,38,100,63],[121000,42,65,51],[121500,42,60,38],[122000,36,129,70],[122000,42,65,51],[122500,42,60,38],[123000,38,100,63],[123000,42,65,51],[123500,42,60,38],[124000,36,129,76],[124000,42,65,51],[124500,42,60,38],[125000,38,100,63],[125000,42,65,51],[125500,42,60,38],[126000,36,129,70],[126000,42,65,51],[126500,38,110,47],[126500,42,60,38],[127000,38,100,63],[127000,42,65,51],[127000,45,110,47],[127500,42,60,38],[127500,47,110,47],[128000,36,129,65],[128000,42,65,45],[129000,42,65,45],[130000,42,65,45],[131000,38,100,54],[131000,42,65,45],[132000,36,129,65],[132000,42,65,45],[133000,42,65,45],[134000,42,65,45],[135000,38,100,54],[135000,42,65,45],[136000,36,129,65],[136000,42,65,45],[137000,42,65,45],[138000,42,65,45],[139000,38,100,54],[139000,42,65,45],[140000,36,129,65],[140000,42,65,45],[141000,42,65,45],[142000,42,65,45],[143000,38,100,54],[143000,42,65,45],[144000,36,129,65],[144000,42,65,45],[145000,42,65,45],[146000,42,65,45],[147000,38,100,54],[147000,42,65,45],[148000,36,129,65],[148000,42,65,45],[149000,42,65,45],[150000,42,65,45],[151000,38,100,54],[151000,42,65,45],[152000,36,129,65],[152000,42,65,45],[153000,42,65,45],[154000,42,65,45],[155000,38,100,54],[155000,42,65,45],[156000,36,129,65],[156000,42,65,45],[157000,42,65,45],[158000,42,65,45],[159000,38,100,47],[159000,38,110,54],[159000,42,65,45],[159500,45,110,47],[160000,36,129,76],[160000,42,65,51],[160500,42,60,38],[161000,38,100,63],[161000,42,65,51],[161500,42,60,38],[162000,36,129,70],[162000,42,65,51],[162500,42,60,38],[163000,38,100,63],[163000,42,65,51],[163500,42,60,38],[164000,36,129,76],[164000,42,65,51],[164500,42,60,38],[165000,38,100,63],[165000,42,65,51],[165500,42,60,38],[166000,36,129,70],[166000,42,65,51],[166500,36,129,53],[166500,42,60,38],[167000,38,100,63],[167000,42,65,51],[167500,42,60,38],[168000,36,129,76],[168000,42,65,51],[168500,42,60,38],[169000,38,100,63],[169000,42,65,51],[169500,42,60,38],[170000,36,129,70],[170000,42,65,51],[170500,42,60,38],[171000,38,100,63],[171000,42,65,51],[171500,42,60,38],[172000,36,129,76],[172000,42,65,51],[172500,42,60,38],[173000,38,100,63],[173000,42,65,51],[173500,42,60,38],[174000,36,129,70],[174000,42,65,51],[174500,36,129,53],[174500,42,60,38],[175000,38,100,63],[175000,42,65,51],[175500,42,60,38],[176000,36,129,76],[176000,42,65,51],[176500,42,60,38],[177000,38,100,63],[177000,42,65,51],[177500,42,60,38],[178000,36,129,70],[178000,42,65,51],[178500,42,60,38],[179000,38,100,63],[179000,42,65,51],[179500,42,60,38],[180000,36,129,76],[180000,42,65,51],[180500,42,60,38],[181000,38,100,63],[181000,42,65,51],[181500,42,60,38],[182000,36,129,70],[182000,42,65,51],[182500,36,129,53],[182500,42,60,38],[183000,38,100,63],[183000,42,65,51],[183500,42,60,38],[184000,36,129,76],[184000,42,65,51],[184500,42,60,38],[185000,38,100,63],[185000,42,65,51],[185500,42,60,38],[186000,36,129,70],[186000,42,65,51],[186500,42,60,38],[187000,38,100,63],[187000,42,65,51],[187500,42,60,38],[188000,36,129,76],[188000,42,65,51],[188500,42,60,38],[189000,38,100,63],[189000,42,65,51],[189500,42,60,38],[190000,36,129,70],[190000,42,65,51],[190500,36,129,53],[190500,38,110,47],[190500,42,60,38],[191000,38,100,63],[191000,42,65,51],[191000,45,110,47],[191500,42,60,38],[191500,47,110,47]],
+};
+const MIDI_SONG = MAPID==='minato' ? MIDI_MINATO : MAPID==='yokohama' ? MIDI_YOKO : null;     // このマップの曲
+const MIDI_BEAT = MIDI_SONG ? 60/MIDI_SONG.bpm : .5, MIDI_LEN = MIDI_SONG ? MIDI_SONG.len*MIDI_BEAT : 1;
+const BGM_SD = () => 60/BGM.bpm/4;
+function bgmPad(t,m,dur,vol){                                       // やわらかく立ち上がるパッド
+  const f=mtof(m), o=AC.createOscillator(), o2=AC.createOscillator(), g=AC.createGain(), a=Math.min(.35,dur*.4);
+  o.type='triangle'; o.frequency.value=f; o2.type='sine'; o2.frequency.value=f*1.004;
+  g.gain.setValueAtTime(.0001,t); g.gain.linearRampToValueAtTime(vol,t+a); g.gain.setValueAtTime(vol,t+Math.max(a,dur-.25)); g.gain.linearRampToValueAtTime(.0001,t+dur);
+  o.connect(g); o2.connect(g); g.connect(BGM.bus); g.connect(BGM.rev); o.start(t); o2.start(t); o.stop(t+dur+.05); o2.stop(t+dur+.05);
+}
+function bgmEP(t,m,vol,dec){                                        // エレピ(フェンダー・ローズ風): やわらかい基音 + きらっとした高い響き
+  const f=mtof(m), o=AC.createOscillator(), o2=AC.createOscillator(), g=AC.createGain(), g2=AC.createGain();
+  o.type='sine'; o.frequency.value=f; o2.type='sine'; o2.frequency.value=f*4.02;
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.005); g.gain.exponentialRampToValueAtTime(.0001,t+dec);
+  g2.gain.setValueAtTime(.0001,t); g2.gain.exponentialRampToValueAtTime(vol*.22,t+.004); g2.gain.exponentialRampToValueAtTime(.0001,t+.12);
+  o.connect(g); o2.connect(g2); g.connect(BGM.bus); g2.connect(BGM.bus); g.connect(BGM.rev); o.start(t); o2.start(t); o.stop(t+dec+.05); o2.stop(t+.2);
+}
+function bgmSnare(t,vol){                                           // ノイズを使わない、軽いスネア(音程のある打撃)
+  for(const [f,v,d] of [[210,1,.1],[340,.6,.07],[2400,.15,.025]]){
+    const o=AC.createOscillator(), g=AC.createGain(); o.type='triangle'; o.frequency.setValueAtTime(f*1.3,t); o.frequency.exponentialRampToValueAtTime(f,t+.03);
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol*v,t+.003); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g); g.connect(BGM.bus); o.start(t); o.stop(t+d+.02);
+  }
+}
+function bgmChop(t,m,vol,ghost){                                    // ミュートしたギターのカッティング(短く切る)
+  const o=AC.createOscillator(), lp=AC.createBiquadFilter(), g=AC.createGain(), d=ghost?.035:.085;
+  o.type='sawtooth'; o.frequency.value=mtof(m); lp.type='lowpass'; lp.Q.value=1;
+  lp.frequency.setValueAtTime(ghost?1800:3800,t); lp.frequency.exponentialRampToValueAtTime(ghost?700:900,t+d*.8);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.002); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(lp); lp.connect(g); g.connect(BGM.bus); o.start(t); o.stop(t+d+.03);
+}
+function bgmHatTick(t,vol){                                         // ハイハットの代わり: ノイズを使わない、高い短い「チッ」
+  for(const f of [6200,8400]){
+    const o=AC.createOscillator(), g=AC.createGain(); o.type='square'; o.frequency.value=f;
+    g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.001); g.gain.exponentialRampToValueAtTime(.0001,t+.02);
+    o.connect(g); g.connect(BGM.bus); o.start(t); o.stop(t+.04);
+  }
+}
+function bgmTom(t,f,vol){
+  const o=AC.createOscillator(), g=AC.createGain(); o.type='sine'; o.frequency.setValueAtTime(f*1.4,t); o.frequency.exponentialRampToValueAtTime(f,t+.12);
+  g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+.004); g.gain.exponentialRampToValueAtTime(.0001,t+.28);
+  o.connect(g); g.connect(BGM.bus); o.start(t); o.stop(t+.3);
+}
+const MIDI_VOL = {ep:.05, bass:.3, gtr:.02, pad:.016, mel:.05, hep:.03};     // トラックごとの音量(ベロシティで、さらに強弱が付く)
+function playMidi(tr,e,at){                                         // e = [開始(拍×1000), ノート, 長さ(拍×1000), ベロシティ]
+  const p=e[1], dur=e[2]/1000*MIDI_BEAT, vel=e[3]/100*(MIDI_SONG.gain||1)*((MIDI_SONG.mix&&MIDI_SONG.mix[tr])||1);   // 曲ごとの全体の音量(gain)と、トラックごとの重み(mix)
+  switch(tr){
+    case 'ep': case 'hep': bgmEP(at,p,MIDI_VOL[tr]*vel/.75,Math.min(1.6,dur*1.3+.15)); break;
+    case 'mel': bgmEP(at,p,MIDI_VOL.mel*vel/.5,Math.min(1.8,dur*1.4+.25)); break;
+    case 'bass': bgmBass(at,p,Math.max(.1,dur*.95),MIDI_VOL.bass*vel/.9); break;
+    case 'gtr': bgmChop(at,p,MIDI_VOL.gtr*vel/.5,0); break;
+    case 'pad': bgmPad(at,p,Math.max(.4,dur),MIDI_VOL.pad); break;
+    case 'drum':
+      if(p===36) bgmKick(at,.34*vel);
+      else if(p===38) bgmSnare(at,.09*vel/.9);
+      else if(p===39) bgmSnare(at,.03*vel/.6);
+      else if(p===42||p===44||p===46) bgmHatTick(at,.011*vel/.66);
+      else if(p===45) bgmTom(at,110,.12*vel);
+      else if(p===47) bgmTom(at,150,.12*vel);
+      break;
+  }
+}
+const MIDI_EV = (()=>{ const a=[]; if(MIDI_SONG) for(const [tr,list] of Object.entries(MIDI_SONG)) if(Array.isArray(list)) for(const e of list) a.push({t:e[0]/1000*MIDI_BEAT,tr,e}); a.sort((x,y)=>x.t-y.t); return a; })();
+const MID = {i:0, start:null};
+function bgmTickMidi(){                                             // 先読みして、MIDI のノートを順に鳴らす(終わったら頭に戻ってくり返す)
+  if(!AC||!BGM_ON) return;
+  if(!musicOn || AC.state!=='running'){ MID.start=null; return; }       // 音楽を切っている間は、止める(再開は、頭から)
+  const now=AC.currentTime;
+  if(MID.start==null){ MID.start=now+.1; MID.i=0; }
+  const horizon=now+.5;
+  for(;;){
+    if(MID.i>=MIDI_EV.length){ MID.i=0; MID.start+=MIDI_LEN; }
+    const ev=MIDI_EV[MID.i], at=MID.start+ev.t;
+    if(at>horizon) break;
+    if(at>=now-.03) playMidi(ev.tr,ev.e,at);
+    MID.i++;
+  }
+}
+function bgmTick(){
+  if(!AC||!BGM_ON) return;
+  const sd=BGM_SD();
+  if(!musicOn || AC.state!=='running'){ BGM.next=AC.currentTime+.1; return; }      // 音楽を切っている間は、進めない
+  if(BGM.next<AC.currentTime) BGM.next=AC.currentTime+.05;
+  while(BGM.next<AC.currentTime+.4){ bgmStep(BGM.step,BGM.next); BGM.step++; BGM.next+=sd; }
+}
+function bgmStart(){
+  if(!BGM_ON||BGM.timer||!AC) return;
+  BGM.out=AC.createGain(); BGM.out.gain.value=musicVol*2; BGM.out.connect(AC.destination);      // 音楽の音量(効果音とは別)
+  BGM.bus=AC.createGain(); BGM.bus.gain.value=.29*(MAPID==='chinatown'?1.88:1); BGM.bus.connect(BGM.out);          // BGM 全体の音量(小さめ)
+  { const len=AC.sampleRate*1.6, ir=AC.createBuffer(2,len,AC.sampleRate);              // 音楽用の残響(効果音の残響とは、別に持つ)
+    for(let c=0;c<2;c++){ const ch=ir.getChannelData(c); for(let i=0;i<len;i++) ch[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5); }
+    const cv=AC.createConvolver(), lp=AC.createBiquadFilter(), wg=AC.createGain();
+    cv.buffer=ir; lp.type='lowpass'; lp.frequency.value=1800; wg.gain.value=.3;
+    BGM.rev=AC.createGain(); BGM.rev.connect(cv); cv.connect(lp); lp.connect(wg); wg.connect(BGM.out); }
+  BGM.next=AC.currentTime+.1; BGM.timer=setInterval(MIDI_SONG?bgmTickMidi:bgmTick,100);
 }
 
 // ================= 入力 =================
@@ -1775,10 +2051,18 @@ $('panelClose').onclick = () => { $('panel').style.display='none'; };
 $('panel').onclick = e => { if(e.target===$('panel')) $('panel').style.display='none'; };
 addEventListener('keydown', e => { if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); } else if(e.key==='Escape'){ $('panel').style.display='none'; closeMenu(); deselect(); } });
 $('infoBtn').onclick = () => { showInfo=!showInfo; $('infoBtn').classList.toggle('on', showInfo); };    // ON/OFFはボタンの色だけで表す
-$('soundBtn').onclick = () => {
-  soundOn=!soundOn; $('soundBtn').classList.toggle('on', soundOn); $('soundBtn').textContent='Sound: '+(soundOn?'ON':'OFF'); audioInit();
-  if(master) master.gain.setTargetAtTime(soundOn?1:0, AC.currentTime, .05);
-};
+function applyVolumes(){                                // スライダー → 音量。0 でオフ(その間、曲も進めない)
+  soundOn = sfxVol>0; musicOn = musicVol>0;
+  $('sfxVol').value=Math.round(sfxVol*100); $('sfxVolV').textContent=Math.round(sfxVol*100)+'%';
+  $('musicVol').value=Math.round(musicVol*100); $('musicVolV').textContent=Math.round(musicVol*100)+'%';
+  if(AC){ if(master) master.gain.setTargetAtTime(sfxVol*2, AC.currentTime, .05); if(typeof BGM!=='undefined' && BGM.out) BGM.out.gain.setTargetAtTime(musicVol*2, AC.currentTime, .05); }
+  try{ localStorage.setItem('yokohama-vol', JSON.stringify({sfx:sfxVol, music:musicVol})); }catch(_){}
+}
+$('sfxVol').oninput = () => { sfxVol=$('sfxVol').value/100; audioInit(); applyVolumes(); };
+$('musicVol').oninput = () => { musicVol=$('musicVol').value/100; audioInit(); applyVolumes(); };
+applyVolumes();
+
+
 $('manualBtn').onclick = () => { const h=$('help'); h.style.display = h.style.display==='none' ? 'block' : 'none'; };
 $('undoBtn').textContent = `Undo (+${UNDO_SITES})`;
 $('passBtn').textContent = `Pass (+${PASS_SITES})`;
@@ -1912,6 +2196,21 @@ $('manualPanel').onclick = e => { if(e.target===$('manualPanel')) $('manualPanel
     $('stageList').appendChild(b);
   }
   $('stageSel').style.display='flex';
+  // 左右に、まだ見えていないステージがあるときは、マップ名の左右に白い ◀ ▶ を出す。押すと、1ステージぶん横にスクロール
+  const list=$('stageList'), wrap=$('stageWrap'), AL=$('stageL'), AR=$('stageR');
+  const upd=()=>{
+    const sp=list.scrollWidth-list.clientWidth;
+    AL.style.display = list.scrollLeft>4 ? 'block' : 'none';
+    AR.style.display = list.scrollLeft<sp-4 ? 'block' : 'none';
+    const nm=list.querySelector('.stageCard span');
+    if(nm){ const wr=wrap.getBoundingClientRect(), nr=nm.getBoundingClientRect(), y=nr.top-wr.top+nr.height/2;
+      AL.style.top=AR.style.top=(y-AL.offsetHeight/2)+'px'; }
+  };
+  const step=dir=>{ const c=list.querySelector('.stageCard'); if(!c) return; const gap=parseFloat(getComputedStyle(list).columnGap)||24;
+    list.scrollBy({left:dir*(c.offsetWidth+gap), behavior:'smooth'}); };
+  AL.onclick=()=>step(-1); AR.onclick=()=>step(1);
+  list.addEventListener('scroll',upd,{passive:true}); addEventListener('resize',upd);
+  requestAnimationFrame(upd); setTimeout(upd,300);
 })();
 function penalty(n,avoid){ for(let i=0;i<n;i++) startSite(randKind(),avoid); }
 // 新築を置ける空きマスの数(ゲームオーバーになるかの判定に使う)
@@ -1928,13 +2227,14 @@ function askGameOver(what,ok){
   queryYes=ok; $('queryPanel').style.display='flex';
 }
 function doPass(){
-  if(mover||over||hintMode) return;
+  if(mover||over||hintMode||performance.now()<passLockUntil) return;
   if(freeCount(grid,[...sites.values()])<PASS_SITES){ askGameOver('Pass',doPassNow); return; }
   doPassNow();
 }
 function doPassNow(){
   fresh.clear(); undoStack.push(snapshot()); if(undoStack.length>200) undoStack.shift();
   deselect(); turns++; stuck=false;
+  passLockUntil=performance.now()+5000; setTimeout(hud,5050);      // Pass の後の5秒間は、連続して押せない
   penalty(PASS_SITES);
   hud(); setMsg(`パスしました: 新築が${PASS_SITES}件増えます`);
   checkGameOver();
