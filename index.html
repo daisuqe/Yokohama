@@ -167,7 +167,7 @@
     <li>選び直すときは、地面や盤の外をクリック、右クリック、Esc。スマホは、相手を1回タップで確認、もう一度タップで決定です。</li>
     <li>1つつなぐごとに新築が1件増えます（建物の数は変わりません）。種類はランダムです。</li>
     <li>つなげる組み合わせがなくなったら Pass。Undo・Hint・Pass は、ボタンの数字の分だけ新築が増えます。</li>
-    <li>更地がなくなるとゲームオーバー。スコアをタップすると内訳が見られます。</li>
+    <li>更地がなくなると、街の完成です(ステージクリア)。右下の Ranking ボタンで、ランキングへ進みます。スコアをタップすると内訳が見られます。</li>
   </ul></div>
   <button class="sub" id="menuClose">Close</button></div></div>
 <button id="hintOk">OK</button>
@@ -2070,7 +2070,7 @@ $('musicVol').oninput = () => { musicVol=$('musicVol').value/100; audioInit(); a
 applyVolumes();
 
 
-$('manualBtn').onclick = () => { const h=$('help'); h.style.display = h.style.display==='none' ? 'block' : 'none'; };
+$('manualBtn').onclick = () => { $('menuPanel').style.display='none'; $('manualBody').innerHTML=$('help').innerHTML; $('manualPanel').style.display='flex'; };   // ゲーム中も、タイトルと同じ How to Play 画面を出す(Menu は閉じる)
 $('undoBtn').textContent = `Undo (+${UNDO_SITES})`;
 $('passBtn').textContent = `Pass (+${PASS_SITES})`;
 $('hintBtn').textContent = `Hint (+${HINT_SITES})`;
