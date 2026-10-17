@@ -274,8 +274,8 @@ const MAPS = {
 };
 // ---- 進行状況: 最初は横浜駅のマップだけ。1ゲームで10万点でみなとみらい、合計30万点で中華街が追加される ----
 const UNLOCK = {
-  minato:    {best:100000, text:'Reach 100,000 points in one game'},
-  chinatown: {total:300000, text:'Earn 300,000 points in total'},
+  minato:    {best:50000, text:'Reach 50,000 points in one game'},
+  chinatown: {total:150000, text:'Earn 150,000 points in total'},
 };
 const PROG_KEY = 'yokohama-progress';
 let PROG = {total:0, best:0, unlocked:{}};
@@ -476,7 +476,13 @@ function loadGame(){
   }catch(_){ return false; }
 }
 addEventListener('pagehide', saveGame);
-document.addEventListener('visibilitychange', () => { if(document.hidden) saveGame(); });
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden) saveGame();
+  if(typeof AC!=='undefined' && AC){                       // 画面が見えない間は、音を止める(BGM が途切れたり、遅れたりしないよう)。戻ったら、続きから
+    if(document.hidden){ if(AC.state==='running') AC.suspend(); }
+    else if(AC.state==='suspended') AC.resume();
+  }
+});
 anims = new Map();
 
 // ================= ルール =================
@@ -1922,7 +1928,8 @@ const MIDI_EV = (()=>{ const a=[]; if(MIDI_SONG) for(const [tr,list] of Object.e
 const MID = {i:0, start:null};
 function bgmTickMidi(){                                             // 先読みして、MIDI のノートを順に鳴らす(終わったら頭に戻ってくり返す)
   if(!AC||!BGM_ON) return;
-  if(!musicOn || AC.state!=='running'){ MID.start=null; return; }       // 音楽を切っている間は、止める(再開は、頭から)
+  if(!musicOn){ MID.start=null; return; }                              // 音楽を切っている間は、止める(再開は、頭から)
+  if(AC.state!=='running') return;                                     // 一時停止の間は、何もしない(再開したら、続きから)
   const now=AC.currentTime;
   if(MID.start==null){ MID.start=now+.1; MID.i=0; }
   const horizon=now+.5;

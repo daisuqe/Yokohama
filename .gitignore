@@ -1,2 +1,12 @@
 # 元画像などの作業用素材(GitHub Pagesに公開しない)
 original/
+# 作業用の、一時的なファイル・確認用の素材(ゲームには使わない)
+__pycache__/
+*.pyc
+_*.js
+_*.py
+_*.json
+listen.html
+sample_houses/
+tools/
+music/*.wav
