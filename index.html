@@ -345,9 +345,15 @@ const $ = id => document.getElementById(id);
 
 // 最初の配置は数字1か2だけ(1:2 の割合は新築の確率に合わせる)
 function randInit(){ return Math.random() < LV_PROB[0]/(LV_PROB[0]+LV_PROB[1]) ? 1 : 2; }
-function randVal(){                    // 1,2,3段階目 = 数字 1,2,4
+function randVal(){                    // 新築の数字。進み具合(今までで一番大きい数字 bestValue)に応じて、3つの段階に分ける
   const r=Math.random();
-  return r<LV_PROB[0] ? 1 : r<LV_PROB[0]+LV_PROB[1] ? 2 : 4;
+  if(bestValue>=128){                  // 3段階目: 1は出さず、少し大きい数字を中心に(128を作る前に、盤面が埋まることが多いので、128から)
+    return r<.35 ? 2 : r<.75 ? 4 : 8;
+  }
+  if(bestValue>=64){                   // 2段階目: 数字8も出る
+    return r<.30 ? 1 : r<.60 ? 2 : r<.85 ? 4 : 8;
+  }
+  return r<LV_PROB[0] ? 1 : r<LV_PROB[0]+LV_PROB[1] ? 2 : 4;      // 1段階目: 1, 2, 4 (45%, 35%, 20%)
 }
 // ---- 種類ごとの画像: Icons/house01～11.png, tree01～11.png (48x48, 01=1 ... 11=1024) ----
 const ICON_IMGS = {};
