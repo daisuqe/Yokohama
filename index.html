@@ -1,7 +1,14 @@
 <!doctype html>
+<!--
+  Yokohama
+  Copyright (c) 2026 daisuqe. All rights reserved.
+  無断での複製・改変・再配布・転載を禁じます。 / Unauthorized copying, modification, or redistribution is prohibited.
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="author" content="daisuqe">
+<meta name="copyright" content="Copyright (c) 2026 daisuqe. All rights reserved.">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Yokohama</title>
 <style>
@@ -67,6 +74,9 @@
   #manualPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:30}
   #manualBody{font-size:17px;line-height:1.55;max-width:560px}
   #manualBody h4{margin:4px 0 6px;font-size:22px} #manualBody ul{margin:0;padding-left:1.2em} #manualBody li{margin-bottom:6px}
+  #licensePanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:30}
+  #licenseBody{font-size:15px;line-height:1.6;max-width:560px;white-space:pre-wrap;opacity:.95}
+  #copyright{cursor:pointer;margin-top:10px;font-size:13px;color:#fff;opacity:.75;text-shadow:0 1px 4px rgba(10,30,50,.7);text-align:center;letter-spacing:.02em}   /* 著作権表示 */
   #stageWrap{position:relative;width:100%}
   .stageArrow{position:absolute;z-index:3;display:none;background:none;border:0;color:#fff;font-size:44px;line-height:1;padding:6px 10px;min-height:0;text-shadow:0 2px 8px rgba(10,30,50,.75);cursor:pointer} .stageArrow:hover{filter:none;transform:scale(1.15)}
   #stageL{left:6px} #stageR{right:6px}
@@ -176,7 +186,7 @@
 <div id="queryPanel"><div id="menuBox"><h3 id="queryTitle">Game Over?</h3><div id="queryMsg"></div>
   <button id="queryYes">Yes</button><button class="sub" id="queryNo">No</button></div></div>
 <button id="doneBtn">Ranking &#9654;</button>
-<div id="stageSel"><h2>Yokohama</h2><div id="stageWrap"><button id="stageL" class="stageArrow">&#9664;</button><div id="stageList"></div><button id="stageR" class="stageArrow">&#9654;</button></div><div id="titleBtns"><button id="titleRank">Ranking</button><button id="titleManual">How to Play</button></div></div>
+<div id="stageSel"><h2>Yokohama</h2><div id="stageWrap"><button id="stageL" class="stageArrow">&#9664;</button><div id="stageList"></div><button id="stageR" class="stageArrow">&#9654;</button></div><div id="titleBtns"><button id="titleRank">Ranking</button><button id="titleManual">How to Play</button></div><div id="copyright" role="button" tabindex="0" title="License">&copy; 2026 daisuqe. All rights reserved.</div></div>
 <div id="rankPanel"><div id="menuBox"><h3>Ranking</h3><div id="rankTabs"></div>
   <div id="rankMode"><button class="sub on" data-m="all">Global</button><button class="sub" data-m="me">Local</button></div>
   <div id="rankBody"></div>
@@ -184,6 +194,7 @@
   <button class="sub" id="rankClose">Close</button></div></div>
 <div id="namePanel"><div id="menuBox"><h3>Your Name</h3><div id="nameMsg">ランキングに載せる名前を入力してください(8文字まで)。</div>
   <input id="nameInput" maxlength="8" autocomplete="off" placeholder="Name"><button id="nameSave">Save</button><button class="sub" id="nameSkip">Skip</button></div></div>
+<div id="licensePanel"><div id="menuBox"><h3>License</h3><div id="licenseBody"></div><button class="sub" id="licenseClose">Close</button></div></div>
 <div id="manualPanel"><div id="menuBox"><h3>How to Play</h3><div id="manualBody"></div><button class="sub" id="manualClose">Close</button></div></div>
 <div id="fxLayer"></div>
 <div id="fxBanner"></div>
@@ -2177,6 +2188,20 @@ if(rankFirst && !(MAPID && MAPS[MAPID])) setTimeout(()=>{
 },0);
 $('rankClose').onclick = () => { $('rankPanel').style.display='none'; };
 $('rankPanel').onclick = e => { if(e.target===$('rankPanel')) $('rankPanel').style.display='none'; };
+const LICENSE_TEXT = `Copyright (c) 2026 daisuqe. All rights reserved.
+
+This game ("Yokohama"), including its source code, graphics, music data, and text, is the property of the copyright holder. No license is granted to copy, modify, distribute, sublicense, sell, or publish any part of it, in source or compiled form, without prior written permission from the copyright holder.
+
+You may play the game as published at its official page.
+
+本ゲーム「Yokohama」(ソースコード、画像、音楽データ、文章を含む)の著作権は、daisuqe が保有します。著作権者の事前の書面による許可なく、全部または一部を、複製、改変、再配布、転載、販売、公開することを禁じます。
+
+公式に公開されているページで、遊ぶことは自由です。`;
+const openLicense = () => { $('licenseBody').textContent=LICENSE_TEXT; $('licensePanel').style.display='flex'; };     // タイトル画面の著作権の表示を押すと、LICENSE の内容を出す
+$('copyright').onclick = openLicense;
+$('copyright').onkeydown = e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openLicense(); } };
+$('licenseClose').onclick = () => { $('licensePanel').style.display='none'; };
+$('licensePanel').onclick = e => { if(e.target===$('licensePanel')) $('licensePanel').style.display='none'; };
 $('manualClose').onclick = () => { $('manualPanel').style.display='none'; };
 $('manualPanel').onclick = e => { if(e.target===$('manualPanel')) $('manualPanel').style.display='none'; };
 (function(){                                          // 画面からはみ出すステージ一覧は、ドラッグで横にスクロール
