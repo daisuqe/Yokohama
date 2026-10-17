@@ -410,7 +410,7 @@ function newGame(){
   const n = Math.round(cells.length*INIT_RATE);
   const kinds=Array.from({length:n},(_,i)=>i%KINDS.length); shuffle(kinds);   // 最初の種類の比率は均等(1個以内の差)
   for(let i=0;i<n;i++){ const [x,y]=cells[i]; grid[y][x]=randInit(); kind[y][x]=kinds[i]; anims.set(y*N+x,{t:performance.now()+i*4,type:'spawn'}); }
-  sites.clear(); fresh.clear(); undoStack.length=0; score=0; turns=0; bestValue=1; stats=newStats(); sel=null; targets=new Map(); preview=null; hintMode=false; mover=null; effects=[]; hover=null; over=false; boardFull=false; stuck=false;
+  sites.clear(); fresh.clear(); undoStack.length=0; score=0; turns=0; bestValue=1; stats=newStats(); sel=null; targets=new Map(); preview=null; hintMode=false; hintPairs=null; mover=null; effects=[]; hover=null; over=false; boardFull=false; stuck=false;
   bestValue = Math.max(1, ...grid.flat());   // 最初の盤面の最大の数字(1か2)
   gameId = Date.now(); bestKind = 1;
   for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(grid[y][x]===bestValue){ bestKind=kind[y][x]; }
@@ -444,7 +444,7 @@ function previewInit(){
   });
   grid[cells[0].y][cells[0].x]=128;                          // 最高ランクは駅前の1つだけ
   sites.clear(); fresh.clear(); undoStack.length=0; stats=newStats(); score=0; turns=0; bestValue=1;
-  sel=null; targets=new Map(); preview=null; hintMode=false; mover=null; effects=[]; hover=null; over=false; boardFull=false; stuck=false;
+  sel=null; targets=new Map(); preview=null; hintMode=false; hintPairs=null; mover=null; effects=[]; hover=null; over=false; boardFull=false; stuck=false;
 }
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.random()*(i+1)|0; [a[i],a[j]]=[a[j],a[i]]; } }
 function setMsg(s){ $('msg').textContent = s; }
@@ -487,7 +487,7 @@ function loadGame(){
     bestKind = d.bestKind!=null ? d.bestKind : (()=>{ let k=1; for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(d.grid[y][x]===d.bestValue) k=d.kind[y][x]; return k; })();
     fresh.clear(); sites.clear(); const now=performance.now(); for(const st of d.sites) sites.set(siteKey(st.x,st.y),{...st,t0:now});
     undoStack.length=0; undoStack.push(...(d.undo||[]));
-    sel=null; targets=new Map(); preview=null; hintMode=false; mover=null; effects=[]; hover=null;
+    sel=null; targets=new Map(); preview=null; hintMode=false; hintPairs=null; mover=null; effects=[]; hover=null;
     over=!!d.over; boardFull=!!d.boardFull; stuck=!!d.stuck;
     hud(); checkGameOver(); return true;
   }catch(_){ return false; }
@@ -539,6 +539,18 @@ function targetsOf(ax, ay){
   }
   return res;
 }
+// 合体できる、すべての組み合わせ(ヒント用)。同じ2つの駒の組は1つにして、短い方の経路を採る
+function allMerges(){
+  const best=new Map();
+  for(let y=0;y<N;y++) for(let x=0;x<N;x++){
+    if(!grid[y][x]) continue;
+    for(const [k,path] of targetsOf(x,y)){
+      const a=y*N+x, key=a<k ? a+'-'+k : k+'-'+a, old=best.get(key);
+      if(!old || old.path.length>path.length) best.set(key,{a:[x,y], b:[k%N,k/N|0], path});
+    }
+  }
+  return [...best.values()];
+}
 function anyMove(){
   for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(grid[y][x] && targetsOf(x,y).size) return [x,y];
   return null;
@@ -568,7 +580,7 @@ function snapshot(){
   return {grid:grid.map(r=>r.slice()), kind:kind.map(r=>r.slice()), score, turns, bestValue, bestKind, stats:JSON.parse(JSON.stringify(stats)),
     sites:[...sites.values()].map(({x,y,k,v})=>({x,y,k,v}))};
 }
-let hintMode=false;                                // Hint表示中: OKを押すまで駒の操作は不可
+let hintMode=false, hintPairs=null;                                // Hint表示中: OKを押すまで駒の操作は不可
 function undo(){
   if(over || mover || hintMode || !undoStack.length) return;
   const top=undoStack[undoStack.length-1];
@@ -1415,12 +1427,18 @@ function frame(now){
     const [ncx,ncy]=center(it.x,it.y);
     if(h/heightOf(it.v)>.6) nums.push([it.v,it.k,ncx,ncy-NUM_H,it.x,it.y]);
   }
-  if(hintMode && sel && preview){                       // ヒント: 2つの駒と接続線以外は画面を暗くして、2つの駒だけ描き直す
+  let hintInv=null;
+  if(hintMode && hintPairs){                            // ヒント: 合体できるすべての組み合わせ以外は、画面を暗くして、関係する駒だけ描き直す
     ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.fillStyle='rgba(0,0,0,.62)'; ctx.fillRect(0,0,cv.width,cv.height); ctx.restore();
-    for(const c of [sel,preview]){
-      const v=grid[c[1]][c[0]], k=kind[c[1]][c[0]]; if(!v) continue;
-      const isSel=c===sel, lift=isSel?6+2*Math.sin(now/150):0;
-      drawBlock(c[0],c[1],v,k,heightOf(v),lift,isSel);
+    hintInv=new Set(); for(const q of hintPairs){ hintInv.add(q.a[1]*N+q.a[0]); hintInv.add(q.b[1]*N+q.b[0]); }
+    for(const key of hintInv){
+      const x=key%N, y=key/N|0, v=grid[y][x], k=kind[y][x]; if(!v) continue;
+      drawBlock(x,y,v,k,heightOf(v),0,false);
+    }
+    for(const key of hintInv) poly(diamond(key%N,key/N|0,1.12), null, '#ffe000', 5);          // 関係する駒の、黄色の枠
+    ctx.lineJoin='round'; ctx.lineCap='round'; ctx.strokeStyle='#ff0000'; ctx.lineWidth=5;
+    for(const q of hintPairs){                                                              // すべての経路を、赤い線で
+      ctx.beginPath(); [...q.path,q.b].forEach((p,i)=>{ const [cx,cy]=center(p[0],p[1]); i?ctx.lineTo(cx,cy):ctx.moveTo(cx,cy); }); ctx.stroke();
     }
   }
   if(sel){                                              // 選んだ駒と、接続先のセル: 黄色の枠を、セルより少し大きいひし形・接続線と同じくらいの太さで、建物の上・数字の下に描く
@@ -1434,7 +1452,7 @@ function frame(now){
     ctx.strokeStyle='#ff0000'; ctx.lineWidth=5; ctx.stroke();      // 経路プレビュー: 真っ赤な線(縁取りなし)
   }
   if(showInfo) for(const n of nums){
-    if(hintMode && sel && preview && !((n[4]===sel[0]&&n[5]===sel[1])||(n[4]===preview[0]&&n[5]===preview[1]))) continue;   // ヒント中は2つの駒の数字だけ
+    if(hintInv && !hintInv.has(n[5]*N+n[4])) continue;   // ヒント中は、関係する駒の数字だけ
     drawNum(n[0],n[1],n[2],n[3]);
   }
   drawLabels();
@@ -2282,16 +2300,17 @@ $('hintBtn').onclick = () => {
   if(mover||over||hintMode) return;
   const m=anyMove(); if(!m){ setMsg('つなげる組み合わせがありません。Pass を使ってください。'); return; }
   const doHint=()=>{
-    const t=targetsOf(m[0],m[1]), first=[...t.keys()][0], path=t.get(first);
-    const avoid=new Set(path.map(p=>p[1]*N+p[0])); avoid.add(first); avoid.add(m[1]*N+m[0]);   // ヒントの経路と2つの駒には、新築を置かない
+    const pairs=allMerges();                         // 合体できる、すべての組み合わせ
+    const avoid=new Set();                           // どの組み合わせの経路・駒にも、新築を置かない
+    for(const q of pairs){ for(const c of q.path) avoid.add(c[1]*N+c[0]); avoid.add(q.a[1]*N+q.a[0]); avoid.add(q.b[1]*N+q.b[0]); }
     penalty(HINT_SITES,avoid);                       // ヒントのペナルティ
-    sel=m; targets=t; preview=[first%N, first/N|0];  // 駒と、つなぐ相手を表示
+    sel=null; targets=new Map(); preview=null; hintPairs=pairs;
     hintMode=true;
-    hud(); setMsg(`ヒント: 新築が${HINT_SITES}件増えます。OK を押して続けます。`);
+    hud(); setMsg(`ヒント: 合体できる組み合わせは ${pairs.length} 通り。新築が${HINT_SITES}件増えます。OK を押して続けます。`);
   };
   if(freeCount(grid,[...sites.values()])<HINT_SITES) askGameOver('Hint',doHint); else doHint();
 };
-$('hintOk').onclick = () => { hintMode=false; sel=null; targets=new Map(); preview=null; hud(); setMsg(''); };
+$('hintOk').onclick = () => { hintMode=false; hintPairs=null; sel=null; targets=new Map(); preview=null; hud(); setMsg(''); };
 
 
 $('mapTitle').textContent = MAPDEF.title;
