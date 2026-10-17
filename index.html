@@ -78,7 +78,7 @@
   #licenseBody{font-size:15px;line-height:1.6;max-width:560px;white-space:pre-wrap;opacity:.95}
   #copyright{cursor:pointer;margin-top:10px;font-size:13px;color:#fff;opacity:.75;text-shadow:0 1px 4px rgba(10,30,50,.7);text-align:center;letter-spacing:.02em}   /* 著作権表示 */
   #stageWrap{position:relative;width:100%}
-  .stageArrow{position:absolute;z-index:3;display:none;background:none;border:0;color:#fff;font-size:44px;line-height:1;padding:6px 10px;min-height:0;text-shadow:0 2px 8px rgba(10,30,50,.75);cursor:pointer} .stageArrow:hover{filter:none;transform:scale(1.15)}
+  .stageArrow{position:absolute;z-index:3;display:none;background:none;border:0;color:#fff;font-size:44px;line-height:1;padding:6px 10px;min-height:0;text-shadow:0 2px 6px rgba(10,30,50,.5);cursor:pointer;opacity:.85} .stageArrow:hover{filter:none;transform:scale(1.15);opacity:1}   /* ステージ選択の ◀ ▶: 白の三角 + ドロップシャドウ。白は少しおさえ(opacity .85)、影は少し弱く */
   #stageL{left:6px} #stageR{right:6px}
   #stageList{display:flex;flex-wrap:nowrap;gap:24px;justify-content:flex-start;width:100%;box-sizing:border-box;padding:8px 24px;overflow-x:auto;scrollbar-width:none;cursor:grab;touch-action:pan-x;-webkit-overflow-scrolling:touch}
   #stageList::-webkit-scrollbar{display:none} #stageList.drag{cursor:grabbing} #stageList>:first-child{margin-left:auto} #stageList>:last-child{margin-right:auto}   /* 少ないときは中央、はみ出すときは左端から横スクロール */
@@ -860,7 +860,7 @@ function layout(){
   $('mapTitle').style.top=(hudH+6)+'px';
   const bw=N*TW+8, bh=N*TH+72;                    // 余白を最小限にして、盤面をできるだけ大きく表示
   const portrait = W < H;                         // スマホの縦画面: 盤面の幅を画面の1.1倍にして、左右を5%ずつはみ出させる
-  const s = portrait ? W*1.1/bw : Math.min(W/bw, availH/bh);
+  const s = portrait ? W*1.1/bw : Math.min(W/bw, availH/bh)*1.1;      // 入った時の拡大: 盤面が画面より、1.1倍(上下左右に、5%ずつ)はみ出す。縦画面は幅、横画面は収まる方の長さを基準にする
   fitS=s;
   const centered = sc => ({s:sc, tx:W/2, ty:top+availH/2-MAP_CENTER_WY*sc});
   if(userView && userView.s<=s*1.0001){          // 盤面が全て収まるまで引いたら、中心をマップ中心へ
