@@ -985,7 +985,7 @@ function layout(){
   $('mapTitle').style.top=(hudH+6)+'px';
   const bw=N*TW+8, bh=N*TH+72;                    // 余白を最小限にして、盤面をできるだけ大きく表示
   const portrait = W < H;                         // スマホの縦画面: 盤面の幅を画面の1.1倍にして、左右を5%ずつはみ出させる
-  const s = portrait ? W*1.1/bw : Math.min(W/bw, availH/bh)*1.1;      // 入った時の拡大: 盤面が画面より、1.1倍(上下左右に、5%ずつ)はみ出す。縦画面は幅、横画面は収まる方の長さを基準にする
+  const s = PREVIEW ? Math.min(W/bw, availH/bh)*.97 : portrait ? W*1.1/bw : Math.min(W/bw, availH/bh)*1.1;      // タイトル画面の小さな絵(PREVIEW)は、はみ出さず、全体が見えるように      // 入った時の拡大: 盤面が画面より、1.1倍(上下左右に、5%ずつ)はみ出す。縦画面は幅、横画面は収まる方の長さを基準にする
   fitS=s;
   const centered = sc => ({s:sc, tx:W/2, ty:top+availH/2-MAP_CENTER_WY*sc});
   if(userView && userView.s<=s*1.0001){          // 盤面が全て収まるまで引いたら、中心をマップ中心へ
