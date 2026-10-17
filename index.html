@@ -791,8 +791,8 @@ function clearLow(nv,b){
 const ghosts=[];
 const GHOST_WARN=1000, GHOST_OUT=700;
 let toastTimer=0;
-function showClearToast(nv,vals){                      // 1行目: 作った建物の祝福(64 Built!) / 2行目: 消えた数字(1, 2 Cleared)
-  const el=$('clearToast'); el.innerHTML=`<span class="tb">${nv} Built!</span>`+(vals.length?`<span class="te">${vals.join(', ')} Cleared</span>`:''); el.style.display='block';
+function showClearToast(nv,vals){                      // 1行目: 作った建物の祝福(64 Built!) / 2行目: 消えた数字(Block 1, 2 Cleared)
+  const el=$('clearToast'); el.innerHTML=`<span class="tb">${nv} Built!</span>`+(vals.length?`<span class="te">Block ${vals.join(', ')} Cleared</span>`:''); el.style.display='block';
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.style.display='none'; }, 2400);
 }
