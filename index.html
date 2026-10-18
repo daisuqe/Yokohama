@@ -404,12 +404,12 @@ const LV_PROB = [.45,.35,.20]; // 新築が1,2,3段階目になる確率       /
 const BUILD_MS = 2000;        // 新築の工事時間(柵で囲う。この間ずっと土煙が出る)
 // 駒の種類 (同じ種類・同じ数字だけ合体できる)
 const KINDS = [
-  {name:'Residential',          top:'#6f9fd6', num:'#ffffff', ink:'#0a2f66', numC:'#3a7fff', icon:'house', tint:'#2f7bff', tintA:.49, gamma:.1,   // 青の濃さ(以前の0.7の7割)
-   tiers:['Tent','Hut','Log Cabin','Bungalow','Two-Story House','Three-Story House','Mansion','Apartment','Low-Rise Condo','Mid-Rise Condo','Tower Condo']},
-  {name:'Shops & Fun', top:'#d9736f', num:'#ffffff', ink:'#6b0d0d', numC:'#ff1a1a', icon:'shop', tint:'#ff3b30', tintA:.22,
-   tiers:['Food Stall','Kiosk','Shop','Convenience Store','Cafe & Diner','Drugstore','Game Center','Supermarket','Cinema','Shopping Mall','Department Store']},
-  {name:'Nature & Parks',      top:'#6fbf86', num:'#ffffff', ink:'#0b4a1c', numC:'#16cf2a', icon:'tree', tint:'#7ee02e', tintA:.4,
-   tiers:['Lawn','Bush','Hedge','Azalea','Small Tree','Flower Bed','Flower Bed & Bench','Tree','Small Park','Park','Grand Park']
+  {name:'Residential', max:4096,          top:'#6f9fd6', num:'#ffffff', ink:'#0a2f66', numC:'#3a7fff', icon:'house', tint:'#2f7bff', tintA:.49, gamma:.1,   // 青の濃さ(以前の0.7の7割)
+   tiers:['Tent','Hut','Log Cabin','Bungalow','Two-Story House','Three-Story House','Mansion','Apartment','Low-Rise Condo','Mid-Rise Condo','Tower Condo','Twin Towers','Tower Complex']},
+  {name:'Shops & Fun', max:4096, top:'#d9736f', num:'#ffffff', ink:'#6b0d0d', numC:'#ff1a1a', icon:'shop', tint:'#ff3b30', tintA:.22,
+   tiers:['Food Stall','Kiosk','Shop','Convenience Store','Cafe & Diner','Drugstore','Game Center','Supermarket','Cinema','Shopping Mall','Department Store','Shopping Complex','Shopping District']},
+  {name:'Nature & Parks', max:4096,      top:'#6fbf86', num:'#ffffff', ink:'#0b4a1c', numC:'#16cf2a', icon:'tree', tint:'#7ee02e', tintA:.4,
+   tiers:['Lawn','Bush','Hedge','Azalea','Small Tree','Flower Bed','Flower Bed & Bench','Tree','Small Park','Park','Grand Park','Forest Park','Botanical Garden']
   },
 ];
 const nameOf = (k,v) => { const t=KINDS[k].tiers; return t[Math.min(Math.round(Math.log2(v)),t.length-1)]; };
@@ -452,9 +452,9 @@ function randVal(){                    // 新築の数字。進み具合(今ま�
   }
   return r<LV_PROB[0] ? 1 : r<LV_PROB[0]+LV_PROB[1] ? 2 : 4;      // 1段階目: 1, 2, 4 (45%, 35%, 20%)
 }
-// ---- 種類ごとの画像: Icons/house01～11.png, tree01～11.png (48x48, 01=1 ... 11=1024) ----
+// ---- 種類ごとの画像: Icons/house01～13.png, shop01～13.png, tree01～13.png (48x48, 01=1 ... 11=1024, 12=2048, 13=4096) ----
 const ICON_IMGS = {};
-for(const kd of KINDS) if(kd.icon) ICON_IMGS[kd.icon]=Array.from({length:11}, (_,i) => { const im=new Image(); im.src=`Icons/${kd.icon}${String(i+1).padStart(2,'0')}.png`; return im; });
+for(const kd of KINDS) if(kd.icon) ICON_IMGS[kd.icon]=Array.from({length:13}, (_,i) => { const im=new Image(); im.src=`Icons/${kd.icon}${String(i+1).padStart(2,'0')}.png`; return im; });
 let showInfo = true;     // 数字と種類色の表示ON/OFF
 const tintCache = new Map();
 const USE_TINT = false;                // 種類ごとの色(青・赤・緑)を建物の画像に重ねるか。今はオフ(true で復活)
@@ -674,7 +674,7 @@ const newStats = () => ({pts:KINDS.map(()=>0), merges:KINDS.map(()=>Array(14).fi
 function showBreakdown(){
   const fmt=n=>n.toLocaleString('en-US');
   let rows='';
-  for(let t=1;t<=10;t++){
+  for(let t=1;t<=12;t++){
     const v=Math.pow(2,t), cnt=KINDS.map((_,k)=>stats.merges[k][t]);
     rows+=`<tr><td>${v}</td><td>${fmt(pointsFor(v))}</td>${cnt.map(c=>`<td>${c||'-'}</td>`).join('')}</tr>`;
   }
