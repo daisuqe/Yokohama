@@ -121,7 +121,9 @@
     filter:drop-shadow(1.5px 0 0 rgba(110,52,0,.88)) drop-shadow(-1.5px 0 0 rgba(110,52,0,.88)) drop-shadow(0 1.5px 0 rgba(110,52,0,.88)) drop-shadow(0 -1.5px 0 rgba(110,52,0,.88)) drop-shadow(0 0 11px rgba(255,208,95,.8)) drop-shadow(0 0 18px rgba(255,190,60,.4))}   /* 背景はなし。茶色の縁取り(少し濃いめ)と、金色の光(2重・ほどよい強さ) */
   #clearToast .tb{font-size:clamp(40px,11vw,76px);font-weight:900;letter-spacing:.05em;line-height:1.1}   /* 1行目: 作った建物の祝福(主役) */
   #clearToast .te{font-size:clamp(24px,6vw,40px);font-weight:800;letter-spacing:.06em;margin-top:2px}   /* 2行目: 消える数字 */
-  #clearToast.show{animation:toastIn 2.4s ease-out forwards}   /* 64以上を作ったときの祝福。レベルアップのバナーより、ずっと控えめ */
+  #clearToast .tm{font-size:clamp(20px,5vw,32px);font-weight:800;letter-spacing:.05em;margin-top:8px}   /* 3行目: 4096 のときだけ、これ以上は合体できない、という知らせ */
+  #clearToast.show{animation:toastIn 2.4s ease-out forwards} #clearToast.show.long{animation:toastInLong 4.6s ease-out forwards}   /* 64以上を作ったときの祝福。レベルアップのバナーより、ずっと控えめ */
+  @keyframes toastInLong{0%{opacity:0;transform:translateX(-50%) translateY(6px) scale(.9)}9%{opacity:1;transform:translateX(-50%) translateY(0) scale(1.04)}13%{transform:translateX(-50%) scale(1)}84%{opacity:1}100%{opacity:0}}
   @keyframes toastIn{0%{opacity:0;transform:translateX(-50%) translateY(6px) scale(.9)}16%{opacity:1;transform:translateX(-50%) translateY(0) scale(1.04)}24%{transform:translateX(-50%) scale(1)}78%{opacity:1}100%{opacity:0}}
   #mapTitle{position:fixed;left:14px;font-size:40px;font-weight:700;letter-spacing:.03em;pointer-events:none;
     color:#fff;text-shadow:0 1px 4px rgba(10,30,50,.6)}
@@ -220,6 +222,8 @@ const TXT = {
     hintNone: 'つなげる組み合わせがありません。Pass を使ってください。',
     stuck: n=>`つなげる組み合わせがありません。Pass で続けられます（新築が${n}件増えます）。`,
     noPartner: '今、この駒につなげられる相手はいません',
+    maxNote: v=>`${v}以上は合体できません`,
+    maxLevel: v=>`${v}は最大のレベルです。これ以上は合体できません(盤面に残り続けます)`,
     tapAgain: 'もう一度タップで合体します',
     turnBig: '1回曲がって接することができません',
     turnSub: '選択中の駒をもう一度押すと取り消し、同じ駒を選ぶとつながります。',
@@ -251,6 +255,8 @@ const TXT = {
     hintNone: 'No merges available. Use Pass.',
     stuck: n=>`No merges left. Press Pass to continue (+${n} new buildings).`,
     noPartner: 'No matching piece can reach this one right now',
+    maxNote: v=>`${v} is the top level. It can't be merged any further`,
+    maxLevel: v=>`${v} is the top level and can't be merged any further (it stays on the board)`,
     tapAgain: 'Tap again to merge',
     turnBig: "Can't connect with one turn",
     turnSub: 'Tap the selected piece again to deselect, or pick a matching piece.',
@@ -816,10 +822,12 @@ function clearLow(nv,b){
 const ghosts=[];
 const GHOST_WARN=1000, GHOST_OUT=700;
 let toastTimer=0;
+const MAXV = Math.min(...KINDS.map(k=>k.max||Infinity));      // 一番大きい数字(4096)。これ以上は、合体できず、増えも減りもしないまま、盤面に残る
 function showClearToast(nv,vals){                      // 1行目: 作った建物の祝福(64 Built!) / 2行目: 消えた数字(Block 1, 2 Cleared)
-  const el=$('clearToast'); el.innerHTML=`<span class="tb">${nv} Built!</span>`+(vals.length?`<span class="te">Block ${vals.join(', ')} Cleared</span>`:''); el.style.display='block';
+  const el=$('clearToast'); el.innerHTML=`<span class="tb">${nv} Built!</span>`+(vals.length?`<span class="te">Block ${vals.join(', ')} Cleared</span>`:'')+(nv>=MAXV?`<span class="tm">${tr('maxNote',MAXV)}</span>`:''); el.style.display='block';
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-  clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.style.display='none'; }, 2400);
+  const long=nv>=MAXV; el.classList.toggle('long',long);
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ el.style.display='none'; }, long?4600:2400);
 }
 function sfxClear(){                                // やさしい、小さなきらめき(上がっていく音)
   if(!AC||!soundOn) return;
@@ -2205,7 +2213,7 @@ function clickAt(e){
     let p = grid[c[1]][c[0]] ? c : (tol ? nearbyPiece(c,w) : null);
     if(!p) return;
     sel=[p[0],p[1]]; targets=targetsOf(p[0],p[1]); preview=null; previewB=null;      // 接続先がなくても選択はできる
-    if(!targets.size) setMsg(tr('noPartner'));
+    if(!targets.size) setMsg(grid[p[1]][p[0]]>=(KINDS[kind[p[1]][p[0]]].max||Infinity) ? tr('maxLevel',grid[p[1]][p[0]]) : tr('noPartner'));
     return;
   }
   if(sel[0]===c[0] && sel[1]===c[1]){ deselect(); return; }   // 選択中の駒をもう一度 = キャンセル
