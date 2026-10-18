@@ -595,10 +595,8 @@ const inb = (x,y) => x>=0 && y>=0 && x<N && y<N;
 const walkable = t => t===LAND||t===ROAD||t===BRIDGE;
 const free = (x,y) => inb(x,y) && grid[y][x]===0 && walkable(terrain[y][x]) && !sites.has(y*N+x);
 
-// (ax,ay)の駒が「0回か1回曲がって」隣接できる同数字の駒 -> 経路
-function targetsOf(ax, ay){
-  const v = grid[ay][ax];
-  if(v >= (KINDS[kind[ay][ax]].max||Infinity)) return new Map();   // その種類の最大値には合体先がない
+// (ax,ay)の駒が「0回か1回曲がって」止まれるセル -> そこまでの経路(自分の位置も含む)
+function reachFrom(ax, ay){
   const reach = new Map();
   const add = p => { const [x,y]=p[p.length-1], k=y*N+x; if(!reach.has(k)) reach.set(k,p); };
   add([[ax,ay]]);
@@ -614,6 +612,13 @@ function targetsOf(ax, ay){
       x+=d1[0]; y+=d1[1];
     }
   }
+  return reach;
+}
+// (ax,ay)の駒が「0回か1回曲がって」隣接できる同数字の駒 -> 経路
+function targetsOf(ax, ay){
+  const v = grid[ay][ax];
+  if(v >= (KINDS[kind[ay][ax]].max||Infinity)) return new Map();   // その種類の最大値には合体先がない
+  const reach = reachFrom(ax, ay);
   const res = new Map();
   for(const [, path] of reach){
     const [x,y]=path[path.length-1];
@@ -637,6 +642,23 @@ function allMerges(){
     }
   }
   return [...best.values()];
+}
+// 選んだ駒の、行き先として指定されたセル c を、解決する: 相手の駒(c)でも、相手の隣の移動先のセル(c)でもよい。 -> {b:相手の位置, path:移動の経路} か null
+let destCache={key:'',reach:null};
+function resolveDest(c){
+  if(!sel || !c) return null;
+  const k=c[1]*N+c[0];
+  if(targets.has(k)) return {b:c, path:targets.get(k)};                 // 相手の駒を指定
+  const key=sel[0]+','+sel[1]+','+turns+','+sites.size;                  // 選んだ駒が同じ間は、止まれる場所の計算を、使い回す
+  if(destCache.key!==key) destCache={key, reach:reachFrom(sel[0],sel[1])};
+  const path=destCache.reach.get(k);
+  if(!path || path.length<2 || grid[c[1]][c[0]]) return null;            // 移動先のセル(空いていて、動く必要がある)でなければ、無効
+  const v=grid[sel[1]][sel[0]], kd=kind[sel[1]][sel[0]];
+  for(const [dx,dy] of DIRS){                                            // そのセルの隣に、合体できる相手がいれば、それを相手にする
+    const nx=c[0]+dx, ny=c[1]+dy;
+    if(inb(nx,ny) && !(nx===sel[0]&&ny===sel[1]) && grid[ny][nx]===v && kind[ny][nx]===kd) return {b:[nx,ny], path};
+  }
+  return null;
 }
 function anyMove(){
   for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(grid[y][x] && targetsOf(x,y).size) return [x,y];
@@ -1416,6 +1438,20 @@ function boatItems(items){
     if(terrain[cy][cx]!==WATER) items.push({x:cx,y:cy,d:cx+cy,cover:1});
   }
 }
+// 移動の経路を描く: 赤い線(曲がるのは1回まで) + 移動先に、上から見た形の矢印の頭(2本の線) + 移動先のセルに、黄色の四角。相手のセルまでは、線を引かない
+function drawMovePath(path){
+  if(!path || path.length<2) return;                              // 動かずに、隣と合体できるときは、線も印も、なし
+  const n=path.length, [ex,ey]=path[n-1], [px,py]=path[n-2];
+  poly(diamond(ex,ey,1.12),'rgba(255,224,0,.28)','#ffe000',5);   // 移動先の四角(移動元と同じ黄色)
+  ctx.save(); ctx.lineJoin='round'; ctx.lineCap='round'; ctx.strokeStyle='#ff0000'; ctx.lineWidth=5;
+  ctx.beginPath(); path.forEach((c,i)=>{ const [cx,cy]=center(c[0],c[1]); i?ctx.lineTo(cx,cy):ctx.moveTo(cx,cy); }); ctx.stroke();
+  // 矢印の頭: 地面を真上から見た向きで、「>」の形に2本の線を引く(タイル座標で描いて、盤面と同じ斜めの見え方に投影する)
+  const ux=ex-px, uy=ey-py, vx=-uy, vy=ux, L=.34, W=.26, tx=ex+.5, ty=ey+.5;
+  const P=(x,y)=>{ const [a,b]=proj(x,y); return [a,b]; };
+  const tip=P(tx,ty), w1=P(tx-ux*L+vx*W,ty-uy*L+vy*W), w2=P(tx-ux*L-vx*W,ty-uy*L-vy*W);
+  ctx.beginPath(); ctx.moveTo(w1[0],w1[1]); ctx.lineTo(tip[0],tip[1]); ctx.lineTo(w2[0],w2[1]); ctx.stroke();
+  ctx.restore();
+}
 function drawBoat(b){
   ctx.save(); ctx.globalAlpha=b.a;
   const z0=SHIP_WATER_Z-2+Math.sin(performance.now()/700)*.8, H=3.5;
@@ -1473,16 +1509,16 @@ function frame(now){
   drawGround(now);
 
   const hv = preview || hover;      // タッチは preview、マウスは hover
+  const hvDest = (sel && hv) ? resolveDest(hv) : null;      // ホバー中のセルが、相手の駒か、相手の隣の移動先なら、その行き先
   // 移動可能先ハイライト
   const pulse=.5+.5*Math.sin(now/200);
   if(sel){
     // 接続先の候補は、ホバーするまで反応させない(ホバー中の1マスだけ光らせる)
-    if(hv && targets.has(hv[1]*N+hv[0]))
-      poly(diamond(hv[0],hv[1],1), `rgba(255,255,100,${.25+.25*pulse})`);
+    if(hvDest) poly(diamond(hvDest.b[0],hvDest.b[1],1), `rgba(255,255,100,${.25+.25*pulse})`);
   }
   // 経路プレビュー
   let hoverPath=null;
-  if(sel && hv){ const k=hv[1]*N+hv[0]; if(targets.has(k)) hoverPath=[...targets.get(k),hv]; }
+  if(sel && hvDest){ hoverPath=hvDest.path; }
 
   // 駒
   const items=[], nums=[];
@@ -1550,22 +1586,15 @@ function frame(now){
       const x=key%N, y=key/N|0, v=grid[y][x], k=kind[y][x]; if(!v) continue;
       drawBlock(x,y,v,k,heightOf(v),0,false);
     }
-    for(const key of hintInv) poly(diamond(key%N,key/N|0,1.12), null, '#ffe000', 5);          // 関係する駒の、黄色の枠
-    ctx.lineJoin='round'; ctx.lineCap='round'; ctx.strokeStyle='#ff0000'; ctx.lineWidth=5;
-    for(const q of hintPairs){                                                              // すべての経路を、赤い線で
-      ctx.beginPath(); [...q.path,q.b].forEach((p,i)=>{ const [cx,cy]=center(p[0],p[1]); i?ctx.lineTo(cx,cy):ctx.moveTo(cx,cy); }); ctx.stroke();
-    }
+    for(const q of hintPairs) poly(diamond(q.b[0],q.b[1],1.12), null, '#ff8a1f', 5);        // 相手(ターゲット)は、オレンジの枠
+    for(const q of hintPairs) poly(diamond(q.a[0],q.a[1],1.12), null, '#ffe000', 5);        // 動かす駒は、黄色の枠
+    for(const q of hintPairs) drawMovePath(q.path);                                         // すべての経路を、同じ書き方(赤い線 + 矢印 + 青い移動先)で
   }
-  if(sel){                                              // 選んだ駒と、接続先のセル: 黄色の枠を、セルより少し大きいひし形・接続線と同じくらいの太さで、建物の上・数字の下に描く
+  if(sel){                                              // 選んだ駒(黄色)と、相手(オレンジ)のセル: 枠を、セルより少し大きいひし形・接続線と同じくらいの太さで、建物の上・数字の下に描く
     poly(diamond(sel[0],sel[1],1.12), null, '#ffe000', 5);
-    if(hv && targets.has(hv[1]*N+hv[0])) poly(diamond(hv[0],hv[1],1.12), null, '#ffe000', 5);
+    if(hvDest) poly(diamond(hvDest.b[0],hvDest.b[1],1.12), null, '#ff8a1f', 5);          // 相手(ターゲット)は、オレンジ
   }
-  if(hoverPath){
-    ctx.beginPath();
-    hoverPath.forEach((p,i)=>{ const [cx,cy]=center(p[0],p[1]); i?ctx.lineTo(cx,cy):ctx.moveTo(cx,cy); });
-    ctx.lineJoin='round'; ctx.lineCap='round';
-    ctx.strokeStyle='#ff0000'; ctx.lineWidth=5; ctx.stroke();      // 経路プレビュー: 真っ赤な線(縁取りなし)
-  }
+  if(hoverPath) drawMovePath(hoverPath);            // 経路プレビュー: 真っ赤な線(縁取りなし)
   if(showInfo) for(const n of nums){
     if(hintInv && !hintInv.has(n[5]*N+n[4])) continue;   // ヒント中は、関係する駒の数字だけ
     drawNum(n[0],n[1],n[2],n[3]);
@@ -2141,6 +2170,13 @@ function deselect(){ if(hintMode) return; sel=null; targets=new Map(); preview=n
 function clickAt(e){
   if(mover||over||hintMode) return;
   const c=pick(e);
+  if(c && sel && !grid[c[1]][c[0]]){                              // 選択中に、空いているセルを押したとき: 相手の隣の移動先なら、それで合体(そうでなければ、選択をキャンセル)
+    const d=resolveDest(c);
+    if(d){
+      if(e.pointerType!=='mouse' && !(preview && preview[0]===c[0] && preview[1]===c[1])){ preview=[c[0],c[1]]; setMsg(tr('tapAgain')); return; }
+      preview=null; doMerge(sel,d.b,d.path); return;
+    }
+  }
   if(!c || !grid[c[1]][c[0]]){ if(sel) deselect(); return; }      // 建物以外(地面・道・盤面の外)を押したら選択をキャンセル
   const [x,y]=c, k=y*N+x, touch=e.pointerType!=='mouse';
   if(!touch) preview=null;
