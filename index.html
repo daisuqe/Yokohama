@@ -807,7 +807,8 @@ function clearLow(nv,b){
     gone.add(v);
     grid[y][x]=0; anims.delete(y*N+x);                  // 判定の上では、すぐ消える。絵は、ゴーストが、あとで消す
   }
-  showClearToast(nv,[...gone].sort((a,c)=>a-c)); if(gone.size) sfxClear();
+  const rule=[1,2,4].filter(v=>v<=maxV);                // お知らせには、実際に消えた数字ではなく、この合体で消える数字(ルール)を、いつも出す(64: 1 / 128: 1, 2 / 256以上: 1, 2, 4)
+  showClearToast(nv,rule); if(gone.size) sfxClear();
 }
 // ---- 小さい建物が消えるときの演出: 先に、赤い印と × で、何が消えるかを見せて、そのあと縮んで、土煙とともに消える ----
 const ghosts=[];
@@ -2167,34 +2168,61 @@ function panBy(dx,dy){
   userView={s:v.s,tx:v.tx+dx,ty:v.ty+dy};
 }
 function deselect(){ if(hintMode) return; sel=null; targets=new Map(); preview=null; }
+// ---- タッチしやすくする: 押した場所の「周囲8マス」も、条件に合えば、押したことにする(タッチ操作のとき。マウスは、今までどおり、押したセルだけ。?tol=1 を付けると、マウスでも試せる) ----
+const TOL_FORCE = new URLSearchParams(location.search).has('tol');
+const N8 = [[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]];
+const worldOf = e => { const r=cv.getBoundingClientRect(); return [(e.clientX-r.left-view.tx)/view.s, (e.clientY-r.top-view.ty)/view.s]; };
+const pieceCenter = (x,y) => { const [cx,cy]=center(x,y); return [cx, cy-heightOf(grid[y][x])*.5]; };      // 建物の見た目の中心(地面より、少し上)
+const dist2 = (a,b) => (a[0]-b[0])*(a[0]-b[0]) + (a[1]-b[1])*(a[1]-b[1]);
+// 1回目: 押した所に駒がなければ、周囲8マスの駒を調べる。1つならそれ、2つ以上なら、押した座標に近いもの
+function nearbyPiece(c,w){
+  let best=null, bd=Infinity;
+  for(const [dx,dy] of N8){
+    const x=c[0]+dx, y=c[1]+dy; if(!inb(x,y) || !grid[y][x]) continue;
+    const d=dist2(w,pieceCenter(x,y)); if(d<bd){ bd=d; best=[x,y]; }
+  }
+  return best;
+}
+// 2回目・3回目: 押した所が、行き先でなければ、周囲8マスの中で、行き先になるもの(相手の駒 / 相手の隣の移動先)を探す。複数あれば、相手の駒の位置が、押した座標に近いもの
+let previewB=null;                                  // タッチの確認(プレビュー)中の、相手の駒の位置
+function nearbyTarget(c,w){
+  let best=null, bd=Infinity;
+  for(const [dx,dy] of N8){
+    const x=c[0]+dx, y=c[1]+dy; if(!inb(x,y)) continue;
+    const d=resolveDest([x,y]); if(!d) continue;
+    const dd=dist2(w,pieceCenter(d.b[0],d.b[1])); if(dd<bd){ bd=dd; best={b:d.b, path:d.path, cell:[x,y]}; }
+  }
+  return best;
+}
 function clickAt(e){
   if(mover||over||hintMode) return;
-  const c=pick(e);
-  if(c && sel && !grid[c[1]][c[0]]){                              // 選択中に、空いているセルを押したとき: 相手の隣の移動先なら、それで合体(そうでなければ、選択をキャンセル)
-    const d=resolveDest(c);
-    if(d){
-      if(e.pointerType!=='mouse' && !(preview && preview[0]===c[0] && preview[1]===c[1])){ preview=[c[0],c[1]]; setMsg(tr('tapAgain')); return; }
-      preview=null; doMerge(sel,d.b,d.path); return;
-    }
-  }
-  if(!c || !grid[c[1]][c[0]]){ if(sel) deselect(); return; }      // 建物以外(地面・道・盤面の外)を押したら選択をキャンセル
-  const [x,y]=c, k=y*N+x, touch=e.pointerType!=='mouse';
-  if(!touch) preview=null;
-  if(!sel){
-    sel=[x,y]; targets=targetsOf(x,y); preview=null;      // 接続先がなくても選択はできる
+  const c=pick(e), touch=e.pointerType!=='mouse', tol=touch||TOL_FORCE;
+  if(!c){ if(sel) deselect(); return; }
+  const w=worldOf(e);
+  if(!sel){                                          // 1回目: 駒を選ぶ
+    let p = grid[c[1]][c[0]] ? c : (tol ? nearbyPiece(c,w) : null);
+    if(!p) return;
+    sel=[p[0],p[1]]; targets=targetsOf(p[0],p[1]); preview=null; previewB=null;      // 接続先がなくても選択はできる
     if(!targets.size) setMsg(tr('noPartner'));
     return;
   }
-  if(sel[0]===x && sel[1]===y){ deselect(); return; }   // 選択中の駒をもう一度 = キャンセル
-  if(targets.has(k)){
-    if(touch && !(preview && preview[0]===x && preview[1]===y)){   // タッチ: 1回目は経路プレビュー
-      preview=[x,y]; setMsg(tr('tapAgain')); return;
+  if(sel[0]===c[0] && sel[1]===c[1]){ deselect(); return; }   // 選択中の駒をもう一度 = キャンセル
+  if(!touch && !TOL_FORCE) { preview=null; previewB=null; }
+  const here=grid[c[1]][c[0]], sameKind=here && here===grid[sel[1]][sel[0]] && kind[c[1]][c[0]]===kind[sel[1]][sel[0]];
+  let cand=null;
+  const exact=resolveDest(c);                         // 押したセルが、相手の駒、または、相手の隣の移動先
+  if(exact) cand={b:exact.b, path:exact.path, cell:[c[0],c[1]]};
+  else if(tol && !sameKind) cand=nearbyTarget(c,w);  // 押した所が、行き先でなければ、周囲8マスの行き先を探す(同じ数字の駒を押したのに、つながらないときは、そのまま、理由を知らせる)
+  if(cand){
+    if(touch && !(preview && previewB && previewB[0]===cand.b[0] && previewB[1]===cand.b[1])){      // タッチ: 1回目は経路プレビュー、同じ相手を、もう一度(周囲でもよい)押すと決定
+      preview=cand.cell; previewB=cand.b; setMsg(tr('tapAgain')); return;
     }
-    const path=targets.get(k); preview=null; doMerge(sel,[x,y],path); return;
+    preview=null; previewB=null; doMerge(sel,cand.b,cand.path); return;
   }
-  preview=null;                                    // 接続先でない駒: 選択は保ったまま知らせる
+  if(!here){ deselect(); return; }                    // 何もない所(行き先の近くでもない)を押したら、選択をキャンセル
+  preview=null; previewB=null;                        // 接続先でない駒: 選択は保ったまま知らせる
   sfxError();
-  if(grid[y][x]===grid[sel[1]][sel[0]] && kind[y][x]===kind[sel[1]][sel[0]]) setMsg(tr('turnBig'),true,tr('turnSub'));   // 同じ種類・同じ数字なのに、道がつながらないとき
+  if(sameKind) setMsg(tr('turnBig'),true,tr('turnSub'));   // 同じ種類・同じ数字なのに、道がつながらないとき
   else setMsg(tr('notMatch'));
 }
 const ptrs=new Map(); let press=null;
