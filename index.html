@@ -1442,7 +1442,7 @@ function boatItems(items){
 function drawMovePath(path){
   if(!path || path.length<2) return;                              // 動かずに、隣と合体できるときは、線も印も、なし
   const n=path.length, [ex,ey]=path[n-1], [px,py]=path[n-2];
-  poly(diamond(ex,ey,1.12),'rgba(255,224,0,.28)','#ffe000',5);   // 移動先の四角(移動元と同じ黄色)
+  poly(diamond(ex,ey,1.12),'rgba(255,224,0,.17)','rgba(255,224,0,.6)',5);   // 移動先の四角(移動元と同じ黄色の、濃さ60%)
   ctx.save(); ctx.lineJoin='round'; ctx.lineCap='round'; ctx.strokeStyle='#ff0000'; ctx.lineWidth=5;
   ctx.beginPath(); path.forEach((c,i)=>{ const [cx,cy]=center(c[0],c[1]); i?ctx.lineTo(cx,cy):ctx.moveTo(cx,cy); }); ctx.stroke();
   // 矢印の頭: 地面を真上から見た向きで、「>」の形に2本の線を引く(タイル座標で描いて、盤面と同じ斜めの見え方に投影する)
