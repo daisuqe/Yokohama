@@ -242,7 +242,7 @@ const TXT = {
     <li>選び直すときは、地面や盤の外をクリック、右クリック、Esc。スマホは、相手を1回タップで確認、もう一度タップで決定です。</li>
     <li>1つつなぐごとに新築が1件増えます（建物の数は変わりません）。種類はランダムです。</li>
     <li>つなげる組み合わせがなくなったら Pass。Undo・Hint・Pass は、ボタンの数字の分だけ新築が増えます。</li>
-    <li>大きな建物を作ると、小さな建物が消えます。64を作ると「1」、128を作ると「1と2」、256以上を作ると「1と2と4」の建物が、盤面からまとめて消えます（消えたマスは更地に戻ります）。</li>
+    <li>大きな建物を作ると、小さな建物が消えます。64を作ると「1」、128を作ると「1と2」、256以上を作ると「1と2と4」の建物が、盤面からまとめて消えます（消えたマスは更地に戻ります）。2048は最大で、それ以上は合体できません。2048を作ったあとは、小さい建物は消えなくなります。</li>
     <li>できた建物の数字に応じて、点数が入ります。数字が1段階大きくなるごとに、1回の点数は4倍になります（2を作ると10点、4で40点、8で160点、16で640点…）。大きな建物を作るほど、点数が一気に増えます。</li>
     <li>更地がなくなると、街の完成です（ステージクリア）。右下の Ranking ボタンで、ランキングへ進みます。スコアをタップすると内訳が見られます。</li>
     <li>1ターンごとにデータを保存しています。ブラウザを閉じたり、Save &amp; Exit でトップ画面に戻っても、ゲームを再開できます。途中データはステージ毎に保存されています。</li>
@@ -275,7 +275,7 @@ const TXT = {
     <li>To deselect, click the ground or outside the board, right-click, or press Esc. On a phone, tap the partner once to preview and tap again to confirm.</li>
     <li>Every merge adds one new building (the number of buildings stays the same). Its type is random.</li>
     <li>When no merges are left, use Pass. Undo, Hint and Pass add as many new buildings as the number on the button.</li>
-    <li>Making a big building erases small ones. 64 erases the 1s, 128 erases the 1s and 2s, and 256 or more erases the 1s, 2s and 4s from the whole board (the cells become empty land).</li>
+    <li>Making a big building erases small ones. 64 erases the 1s, 128 erases the 1s and 2s, and 256 or more erases the 1s, 2s and 4s from the whole board (the cells become empty land). 2048 is the top level and can't be merged further; once a 2048 is built, small buildings are no longer erased.</li>
     <li>Each merge scores points based on the building you make. Every step up multiplies the points by 4 (making a 2 scores 10, a 4 scores 40, an 8 scores 160, a 16 scores 640…). The bigger the building, the more points you get.</li>
     <li>When no empty land is left, your city is complete (Stage Clear). Press Ranking at the bottom right to go to the ranking. Tap the score to see the breakdown.</li>
     <li>Your progress is saved every turn. You can close the browser, or return to the title screen with Save &amp; Exit, and resume later. Saved progress is kept separately for each stage.</li>
@@ -396,6 +396,10 @@ function checkUnlocks(){                             // 条件を満たしたス
   return out;
 }
 const MAPID_Q = new URLSearchParams(location.search).get('map');
+// URLは、いつも「ページのアドレスだけ」にそろえる(?map= は、読み込んだ直後に消す)。古い ?map=yokohama のリンクで開いても、
+// 保存データをそのまま読み込んで、同じステージを開く。画面の移動は location.replace で、履歴を増やさない(戻るボタンで誤動作しないように)
+if(MAPID_Q && !PREVIEW && !DEV){ try{ history.replaceState(null,'',location.pathname); }catch(_){} }
+addEventListener('pageshow', e=>{ if(e.persisted && !PREVIEW) location.reload(); });      // 戻る/進むで、古い状態のページが復元されたら、読み込みなおす
 const MAPID = (MAPID_Q && MAPS[MAPID_Q] && isUnlocked(MAPID_Q)) ? MAPID_Q : null;   // 未開放のステージはタイトルへ
 const MAPDEF = MAPS[MAPID] || MAPS.yokohama;
 const N = MAPDEF.rows.length;  // 盤面サイズ (N x N)
@@ -410,11 +414,11 @@ const LV_PROB = [.45,.35,.20]; // 新築が1,2,3段階目になる確率       /
 const BUILD_MS = 2000;        // 新築の工事時間(柵で囲う。この間ずっと土煙が出る)
 // 駒の種類 (同じ種類・同じ数字だけ合体できる)
 const KINDS = [
-  {name:'Residential', max:4096,          top:'#6f9fd6', num:'#ffffff', ink:'#0a2f66', numC:'#3a7fff', icon:'house', tint:'#2f7bff', tintA:.49, gamma:.1,   // 青の濃さ(以前の0.7の7割)
+  {name:'Residential', max:2048,          top:'#6f9fd6', num:'#ffffff', ink:'#0a2f66', numC:'#3a7fff', icon:'house', tint:'#2f7bff', tintA:.49, gamma:.1,   // 青の濃さ(以前の0.7の7割)
    tiers:['Tent','Hut','Log Cabin','Bungalow','Two-Story House','Three-Story House','Mansion','Apartment','Low-Rise Condo','Mid-Rise Condo','Tower Condo','Twin Towers','Tower Complex']},
-  {name:'Shops & Fun', max:4096, top:'#d9736f', num:'#ffffff', ink:'#6b0d0d', numC:'#ff1a1a', icon:'shop', tint:'#ff3b30', tintA:.22,
+  {name:'Shops & Fun', max:2048, top:'#d9736f', num:'#ffffff', ink:'#6b0d0d', numC:'#ff1a1a', icon:'shop', tint:'#ff3b30', tintA:.22,
    tiers:['Food Stall','Kiosk','Shop','Convenience Store','Cafe & Diner','Drugstore','Game Center','Supermarket','Cinema','Shopping Mall','Department Store','Shopping Complex','Shopping District']},
-  {name:'Nature & Parks', max:4096,      top:'#6fbf86', num:'#ffffff', ink:'#0b4a1c', numC:'#16cf2a', icon:'tree', tint:'#7ee02e', tintA:.4,
+  {name:'Nature & Parks', max:2048,      top:'#6fbf86', num:'#ffffff', ink:'#0b4a1c', numC:'#16cf2a', icon:'tree', tint:'#7ee02e', tintA:.4,
    tiers:['Lawn','Bush','Hedge','Azalea','Small Tree','Flower Bed','Flower Bed & Bench','Tree','Small Park','Park','Grand Park','Forest Park','Botanical Garden']
   },
 ];
@@ -578,7 +582,8 @@ function loadGame(){
     const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');
     if(!d || d.grid.length!==N || d.grid[0].length!==N) return false;
     for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(d.grid[y][x] && terrain[y][x]!==LAND) return false;   // マップの形が変わった古いセーブ(駒が道や水の上)は使わない
-    grid=d.grid; kind=d.kind; score=d.score; turns=d.turns; bestValue=d.bestValue; stats=d.stats; gameId=d.gameId||Date.now();
+    grid=d.grid; kind=d.kind; score=d.score; turns=d.turns; bestValue=Math.max(d.bestValue||1,...d.grid.flat());   // 保存データに2048が既にあれば、小さい建物を消さないルールも、すぐに反映される
+     stats=d.stats; gameId=d.gameId||Date.now();
     bestKind = d.bestKind!=null ? d.bestKind : (()=>{ let k=1; for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(d.grid[y][x]===d.bestValue) k=d.kind[y][x]; return k; })();
     fresh.clear(); sites.clear(); const now=performance.now(); for(const st of d.sites) sites.set(siteKey(st.x,st.y),{...st,t0:now});
     undoStack.length=0; undoStack.push(...(d.undo||[]));
@@ -801,12 +806,12 @@ function updateSites(now){
   }
 }
 // 64を作ると数字1(レベル1)、128で数字1と2、256以上で数字1・2・4(レベル1〜3)の建物が全種類消えて更地になる
-function clearLow(nv,b){
+function clearLow(nv,b,capped){
   const t=tierOf(nv); if(t<1) return;
   // 光の柱: 1+1の合体から出る。最初はごく低い白で、レベルが上がるごとに少しずつ高く・金色に、レベル8以上で最大 (lvは1〜3の連続値)
   const lv=1+2*Math.min(1,(t-1)/7), tn=performance.now();
   effects.push({type:'pillar', x:b[0], y:b[1], t:tn, lv, tint:KINDS[kind[b[1]][b[0]]].tint});
-  if(t<6) return;
+  if(t<6 || capped) return;
   const maxV=Math.pow(2,Math.min(t-6,2)), now=performance.now(), gone=new Set();
   for(let y=0;y<N;y++) for(let x=0;x<N;x++){
     const v=grid[y][x];
@@ -822,7 +827,7 @@ function clearLow(nv,b){
 const ghosts=[];
 const GHOST_WARN=1000, GHOST_OUT=700;
 let toastTimer=0;
-const MAXV = Math.min(...KINDS.map(k=>k.max||Infinity));      // 一番大きい数字(4096)。これ以上は、合体できず、増えも減りもしないまま、盤面に残る
+const MAXV = Math.min(...KINDS.map(k=>k.max||Infinity));      // 一番大きい数字(2048)。これ以上は、合体できず、増えも減りもしないまま、盤面に残る
 function showClearToast(nv,vals){                      // 1行目: 作った建物の祝福(64 Built!) / 2行目: 消えた数字(Block 1, 2 Cleared)
   const el=$('clearToast'); el.innerHTML=`<span class="tb">${nv} Built!</span>`+(vals.length?`<span class="te">Block ${vals.join(', ')} Cleared</span>`:'')+(nv>=MAXV?`<span class="tm">${tr('maxNote',MAXV)}</span>`:''); el.style.display='block';
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
@@ -866,12 +871,12 @@ function finishMove(){
   anims.set(b[1]*N+b[0], {t:performance.now(), type:'merge'});
   effects.push({x:b[0], y:b[1], t:performance.now(), txt:'+'+pointsFor(nv).toLocaleString('en-US')});
   const pts=pointsFor(nv);
-  const lvBefore=levelOf(bestValue);
+  const lvBefore=levelOf(bestValue), capped=bestValue>=MAXV;   // 2048が一度でも出ていたら、以後は小さい建物を消さない
   turns++; if(nv>bestValue) bestKind=k; bestValue=Math.max(bestValue,nv); score += pts; stats.pts[k]+=pts; stats.merges[k][tierOf(nv)]++;
   trackScore(pts);
   const lvUp = levelOf(bestValue)>lvBefore;           // レベルアップ中は、工事音(カンカンカン)を鳴らさない
   if(lvUp) levelUp(b[0],b[1],levelOf(bestValue),k,nv);
-  clearLow(nv,b); sfxMerge(tierOf(nv));
+  clearLow(nv,b,capped); sfxMerge(tierOf(nv));
   startSite(randKind(), null, lvUp);   // 新築は1件。種類は、直前に合体した種類とは無関係にランダム(住宅・商業・自然が同じ確率)
   hud();
   setMsg(`${KINDS[k].name}: ${nameOf(k,nv)}  +${pts.toLocaleString('en-US')}` );
@@ -2316,7 +2321,7 @@ $('doneBtn').onclick = () => {                           // クリア後: 名前
     setTimeout(()=>{
       try{ localStorage.removeItem(SAVE_KEY); }catch(_){}
       window.removeEventListener('pagehide', saveGame); saveOff=true;
-      location.href = location.pathname+'?rank='+(MAPID||'yokohama');
+      location.replace(location.pathname+'?rank='+(MAPID||'yokohama'));
     }, wait); };
   shareScore(posted);
 };
@@ -2326,7 +2331,7 @@ $('newYes').onclick = () => {                         // 今のステージの�
   shareScore(()=>{
     try{ localStorage.removeItem(SAVE_KEY); }catch(_){}
     window.removeEventListener('pagehide', saveGame); saveOff=true;
-    location.href = location.pathname;
+    location.replace(location.pathname);
   });
 };
 $('nameSave').onclick = () => {
@@ -2335,7 +2340,7 @@ $('nameSave').onclick = () => {
   $('namePanel').style.display='none'; const f=nameDone; nameDone=null; if(f) f(); if($('rankPanel').style.display==='flex') refreshRank();
 };
 $('nameSkip').onclick = () => { nameSkipped=true; $('namePanel').style.display='none'; const f=nameDone; nameDone=null; if(f) f(); };
-$('stageBtn').onclick = () => { saveGame(); location.href = location.pathname; };   // ?map なしで開き直すとステージ選択
+$('stageBtn').onclick = () => { saveGame(); location.replace(location.pathname); };   // ?map なしで開き直すとステージ選択
 // ---- タイトル画面: ?map= が無いときは最初に出る。タイトル(Yokohama)の下にステージを並べ、未開放のステージはロック表示 ----
 $('titleManual').onclick = () => { $('manualBody').innerHTML=$('help').innerHTML; $('manualPanel').style.display='flex'; };
 let rankStage='yokohama', rankMode='all', rankToken=0;
@@ -2440,7 +2445,7 @@ $('manualPanel').onclick = e => { if(e.target===$('manualPanel')) $('manualPanel
     const sm=document.createElement('small');
     let saved=false; try{ saved=!!localStorage.getItem('yokohama-save-'+id); }catch(_){}
     sm.textContent=saved?'Continue':'New';
-    b.onclick=()=>{ location.href=location.pathname+'?map='+id+(DEV?'&dev=1':''); };
+    b.onclick=()=>{ location.replace(location.pathname+'?map='+id+(DEV?'&dev=1':'')); };
     b.appendChild(sm);
     $('stageList').appendChild(b);
   }
