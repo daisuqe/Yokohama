@@ -3,13 +3,13 @@
  *
  * 使い方は gas/README.md を見てください。
  *  - doPost: ゲームから「名前・スコア・レベル」を受け取って、シート "scores" に保存する
- *  - doGet : ステージごとの上位10件を JSON で返す   例) .../exec?stage=yokohama
+ *  - doGet : ステージごとの上位100件を JSON で返す   例) .../exec?stage=yokohama
  *
  * 1人(id = ブラウザごとのID)につき、ステージごとに1行。より高いスコアのときだけ更新する。
  */
 const SHEET_NAME = 'scores';
 const STAGES = ['yokohama', 'minato', 'chinatown'];   // ゲーム側のステージIDと同じ
-const TOP_N = 10;
+const TOP_N = 100;
 const MAX_SCORE = 1e11;        // これを超えるスコアは受け付けない(明らかな不正)
 const MAX_LEVEL = 30;
 const NAME_MAX = 8;
@@ -72,7 +72,7 @@ function doPost(e) {
   }
 }
 
-// ---- 上位10件を返す ----
+// ---- 上位100件を返す ----
 function doGet(e) {
   const stage = String((e && e.parameter && e.parameter.stage) || '');
   if (STAGES.indexOf(stage) < 0) return json_([]);

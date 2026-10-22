@@ -233,6 +233,7 @@ const TXT = {
     unlocked: t=>`${t} が解放されました`,
     rankFail: 'ランキングを読み込めませんでした。<br>しばらくしてからもう一度お試しください。',
     loading: '読み込み中...',
+    noRecords: 'まだ記録がありません',
     endGameAsk: w=>`${w}をすると盤面がいっぱいになり、ゲームが終わります。続けますか?`,
     confirm: 'ここまでのスコアをランキングに記録して、盤面を捨てます。ステージ選択に戻ります。',
     nameMsg: 'ランキングに載せる名前を入力してください（8文字まで）。',
@@ -266,6 +267,7 @@ const TXT = {
     unlocked: t=>`${t} unlocked`,
     rankFail: 'Could not load the ranking.<br>Please try again later.',
     loading: 'Loading...',
+    noRecords: 'No records yet',
     endGameAsk: w=>`${w} will fill the board and end the game. Continue?`,
     confirm: 'Your score so far will be recorded in the ranking and the board will be discarded. You will return to stage select.',
     nameMsg: 'Enter a name for the ranking (up to 8 characters).',
@@ -746,7 +748,7 @@ function startSite(k,avoid,quiet){                          // avoid: 新築を�
   if(!quiet) sfxHammer();
   return true;
 }
-const RANK_KEY = 'yokohama-ranking', RANK_MAX = 10;
+const RANK_KEY = 'yokohama-ranking', RANK_MAX = 100;      // ランキングは、記録のある順位だけを、最大100位まで出す
 function loadRank(){ try{ return JSON.parse(localStorage.getItem(RANK_KEY)||'{}')||{}; }catch(_){ return {}; } }
 // 今のゲームをランキングに登録する(ゲームオーバー・ギブアップ時)。同じゲームは、何度呼んでも1件だけ(更新)
 // ---- みんなのランキング: Google スプレッドシート + Apps Script (gas/Code.gs) に、名前・スコア・レベルを送って共有する ----
@@ -2353,20 +2355,22 @@ async function loadGlobal(id){                         // みんなの上位(キ
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rankIds = () => Object.keys(MAPS).filter(isUnlocked);       // 未開放のステージは出さない
 const rankWide = () => rankIds().length>1 && innerWidth>=rankIds().length*400+120;      // 全ステージが横に収まる幅(1ステージ約400px)のときだけ並べる。入らなければ、タブで1つずつ
-function rankTable(id){                                  // 1ステージ分の、1〜10位の表(HTMLを返す)
+function rankTable(id){                                  // 1ステージ分の表(記録のある順位だけ、最大100位。HTMLを返す)
   const msg=t=>`<table><tr><td style="text-align:center;opacity:.7">${t}</td></tr></table>`;
   if(LB_URL && rankMode==='all'){
     return loadGlobal(id).then(rows=>{
-      let h=''; for(let i=0;i<RANK_MAX;i++){ const e=rows[i]; h += e ? `<tr><td>${i+1}</td><td class="nm">${esc(e.name)}</td><td>${e.level}</td><td>${Number(e.score).toLocaleString('en-US')}</td></tr>` : `<tr class="empty"><td>${i+1}</td><td class="nm">-</td><td>-</td><td>-</td></tr>`; }
+      let h=''; for(let i=0;i<Math.min(rows.length,RANK_MAX);i++){ const e=rows[i]; h += `<tr><td>${i+1}</td><td class="nm">${esc(e.name)}</td><td>${e.level}</td><td>${Number(e.score).toLocaleString('en-US')}</td></tr>`; }
+      if(!h) return msg(tr('noRecords'));
       return `<table><tr><th>#</th><th class="nm">Name</th><th>Level</th><th>Score</th></tr>${h}</table>`;
     }).catch(()=>msg(tr('rankFail')));
   }
   const list=loadRank()[id]||[];
   let rows='';
-  for(let i=0;i<RANK_MAX;i++){
+  for(let i=0;i<Math.min(list.length,RANK_MAX);i++){
     const e=list[i];
-    rows += e ? `<tr><td>${i+1}</td><td>${e.lv}</td><td>${e.s.toLocaleString('en-US')}</td></tr>` : `<tr class="empty"><td>${i+1}</td><td>-</td><td>-</td></tr>`;
+    rows += `<tr><td>${i+1}</td><td>${e.lv}</td><td>${e.s.toLocaleString('en-US')}</td></tr>`;
   }
+  if(!rows) return Promise.resolve(msg(tr('noRecords')));
   return Promise.resolve(`<table><tr><th>#</th><th>Level</th><th>Score</th></tr>${rows}</table>`);
 }
 function showRank(id){                                  // 狭い画面: 選んだ1ステージ / 広い画面: 全ステージ
