@@ -52,6 +52,15 @@
   @keyframes passGlow{0%,100%{background:#ff7a00;box-shadow:0 0 0 0 rgba(255,150,0,0)}50%{background:#ffb02e;box-shadow:0 0 18px 7px rgba(255,150,0,.85)}}
   #stageSel{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:16px;overflow:auto;
     background:linear-gradient(180deg,#addbfb 0%,#8eccf6 50%,#7dc3f2 100%)}
+  /* タイトル画面の右上: アプリ一覧へ移動するボタン(16x16のドット絵を48pxに拡大) */
+  #appsBtn{position:absolute;top:max(11px,env(safe-area-inset-top));right:max(11px,env(safe-area-inset-right));width:48px;height:48px;min-height:0;padding:0;margin:0;background:none;border:0;border-radius:0;box-shadow:none;opacity:.7;line-height:0;z-index:2}
+  #appsBtn:hover{opacity:1;filter:none} #appsBtn:focus-visible{opacity:1;outline:2px solid #fff;outline-offset:2px}
+  #appsBtn canvas{position:static;inset:auto;width:48px;height:48px;image-rendering:pixelated;display:block}
+  #appsPanel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:45;padding:16px}
+  #appsBox{width:min(380px,100%);box-sizing:border-box;background:rgba(10,12,17,.9);border:1px solid #4a5570;border-radius:10px;padding:22px 18px 18px;color:#d6dae2;text-align:center}
+  #appsMsg{white-space:pre-line;font-size:18px;line-height:1.6}
+  #appsBtns{display:flex;justify-content:center;gap:14px;margin-top:18px}
+  #appsBtns button{width:110px;height:36px;min-height:36px;box-sizing:border-box;padding:0;font-size:18px;border-radius:6px} #appsBtns button:focus-visible{outline:2px solid #fff;outline-offset:2px}
   #stageSel h2{margin:0;font-size:72px;letter-spacing:.08em;font-weight:900;color:#fff;text-shadow:0 3px 10px rgba(10,30,50,.65)}
   #titleRank{font-size:26px;min-height:50px;padding:10px 34px;margin-top:6px;background:none;box-shadow:none;color:#fff;text-shadow:0 2px 6px rgba(10,30,50,.7);letter-spacing:.04em}
   #titleRank:hover{text-decoration:underline;filter:none}
@@ -186,12 +195,13 @@
   <div id="help" style="display:none"></div>
   <button class="sub" id="menuClose">Close</button></div></div>
 <button id="hintOk">OK</button>
+<div id="appsPanel"><div id="appsBox" role="dialog" aria-modal="true"><div id="appsMsg"></div><div id="appsBtns"><button id="appsYes" type="button">Yes</button><button id="appsNo" type="button">No</button></div></div></div>
 <div id="confirmPanel"><div id="menuBox"><h3>Give Up?</h3><div id="confirmMsg"></div>
   <button id="newYes">Yes</button><button class="sub" id="newNo">No</button></div></div>
 <div id="queryPanel"><div id="menuBox"><h3 id="queryTitle">End the Game?</h3><div id="queryMsg"></div>
   <button id="queryYes">Yes</button><button class="sub" id="queryNo">No</button></div></div>
 <button id="doneBtn">Ranking &#9654;</button>
-<div id="stageSel"><h2>Yokohama</h2><div id="stageWrap"><button id="stageL" class="stageArrow">&#9664;</button><div id="stageList"></div><button id="stageR" class="stageArrow">&#9654;</button></div><div id="titleBtns"><button id="titleRank">Ranking</button><button id="titleManual">How to Play</button></div><div id="copyright" role="button" tabindex="0" title="License">&copy; 2026 daisuqe. All rights reserved.</div></div>
+<div id="stageSel"><button id="appsBtn" type="button" aria-label="App list"><canvas id="appsIcon" width="16" height="16"></canvas></button><h2>Yokohama</h2><div id="stageWrap"><button id="stageL" class="stageArrow">&#9664;</button><div id="stageList"></div><button id="stageR" class="stageArrow">&#9654;</button></div><div id="titleBtns"><button id="titleRank">Ranking</button><button id="titleManual">How to Play</button></div><div id="copyright" role="button" tabindex="0" title="License">&copy; 2026 daisuqe. All rights reserved.</div></div>
 <div id="rankPanel"><div id="menuBox"><h3>Ranking</h3><div id="rankTabs"></div>
   <div id="rankMode"><button class="sub on" data-m="all">Global</button><button class="sub" data-m="me">Local</button></div>
   <div id="rankBody"></div>
@@ -2344,6 +2354,43 @@ $('nameSave').onclick = () => {
 $('nameSkip').onclick = () => { nameSkipped=true; $('namePanel').style.display='none'; const f=nameDone; nameDone=null; if(f) f(); };
 $('stageBtn').onclick = () => { saveGame(); location.replace(location.pathname); };   // ?map なしで開き直すとステージ選択
 // ---- タイトル画面: ?map= が無いときは最初に出る。タイトル(Yokohama)の下にステージを並べ、未開放のステージはロック表示 ----
+// ---- 右上のボタン: アプリ一覧(daisuqe.github.io)へ移動。押すと確認してから移動する ----
+const APPS_URL = 'https://daisuqe.github.io/';
+const APPS_ICON = [
+  '......###...###.',
+  '.....#...#.#...#',
+  '.....#...#.#...#',
+  '.....#..#..#..#.',
+  '.....#..#..#..#.',
+  '....##..####..#.',
+  '..##.......#..#.',
+  '.#............#.',
+  '#.............#.',
+  '#..............#',
+  '############...#',
+  '............#..#',
+  '.###########...#',
+  '.#............#.',
+  '..##........##..',
+  '....########....'
+];
+{ const ctx=$('appsIcon').getContext('2d'); ctx.fillStyle='#fff';
+  APPS_ICON.forEach((row,y)=>{ for(let x=0;x<row.length;x++) if(row[x]==='#') ctx.fillRect(x,y,1,1); }); }
+const appsMsg = () => LANG==='ja' ? 'アプリ一覧に移動します。\nこのゲームを離れますがよろしいですか？' : 'This will take you to the app list.\nDo you want to leave this game?';
+function openApps(){ $('appsMsg').textContent=appsMsg(); $('appsPanel').style.display='flex'; $('appsNo').focus(); }
+function closeApps(){ $('appsPanel').style.display='none'; $('appsBtn').focus(); }
+$('appsBtn').onclick = openApps;
+$('appsNo').onclick = closeApps;
+$('appsYes').onclick = () => { location.href = APPS_URL; };
+$('appsPanel').addEventListener('click', e => { if(e.target===$('appsPanel')) closeApps(); });
+addEventListener('keydown', e => {                    // 開いている間は、ゲームのキー操作(Ctrl+Z など)を止める。Esc で閉じる。Tab はYes/Noの間だけを回る
+  if($('appsPanel').style.display!=='flex') return;
+  e.stopImmediatePropagation();
+  if(e.key==='Escape'){ e.preventDefault(); closeApps(); }
+  else if(e.key==='Tab'){ e.preventDefault(); ($('appsYes')===document.activeElement ? $('appsNo') : $('appsYes')).focus(); }
+  else if(e.key==='ArrowLeft'||e.key==='ArrowRight'){ e.preventDefault(); ($('appsYes')===document.activeElement ? $('appsNo') : $('appsYes')).focus(); }
+  else if(e.ctrlKey||e.metaKey) e.preventDefault();
+}, true);
 $('titleManual').onclick = () => { $('manualBody').innerHTML=$('help').innerHTML; $('manualPanel').style.display='flex'; };
 let rankStage='yokohama', rankMode='all', rankToken=0;
 const lbCache={};
