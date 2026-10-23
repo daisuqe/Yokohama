@@ -1,0 +1,9 @@
+name = "yokohama-ranking"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# `wrangler d1 create yokohama-ranking` で出る database_id を、下に貼る
+[[d1_databases]]
+binding = "DB"
+database_name = "yokohama-ranking"
+database_id = "ここにdatabase_idを貼る"

@@ -764,6 +764,10 @@ function loadRank(){ try{ return JSON.parse(localStorage.getItem(RANK_KEY)||'{}'
 // ---- みんなのランキング: Google スプレッドシート + Apps Script (gas/Code.gs) に、名前・スコア・レベルを送って共有する ----
 // ★ Apps Script の「ウェブアプリ」のURLを、下の LB_URL に貼ると、オンラインランキングが有効になる(空のままなら、これまでの個人ランキングだけ)
 const LB_URL = (DEV && new URLSearchParams(location.search).get('lb')) || 'https://script.google.com/macros/s/AKfycby5B-mkcTU4v93MlZcLX2jGXPICOLopYgofTt8H3w7xl7ofaaUUamPgixrHuteki2_0oQ/exec';
+// ★ 移行期間: ランキングを2か所(Google と Cloudflare)に送り、2か所の結果をまとめて表示する。
+//   Cloudflare の Worker のURLを LB2_URL に入れると有効になる(空なら Google だけ)。移行が済んだら、LB_URL を空にして、LB2_URL だけにする
+const LB2_URL = (DEV && new URLSearchParams(location.search).get('lb2')) || 'https://yokohama-ranking.haradadaisuke.workers.dev/';
+const LB_URLS = [LB_URL, LB2_URL].filter(Boolean);
 const NAME_KEY='yokohama-name', UID_KEY='yokohama-uid';
 let lastEntry=null, nameSkipped=false, nameDone=null;
 function getUid(){ let u=''; try{ u=localStorage.getItem(UID_KEY)||''; if(!u){ u=Math.random().toString(36).slice(2,10); localStorage.setItem(UID_KEY,u); } }catch(_){ u='anon'; } return u; }
@@ -774,8 +778,8 @@ function askName(cb){                                 // ニックネームを�
   $('nameInput').value=playerName(); nameDone=cb; $('namePanel').style.display='flex'; setTimeout(()=>$('nameInput').focus(),50);
 }
 function postScore(name){                             // 返事は待たない(ページを離れても届くよう keepalive)
-  fetch(LB_URL,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({stage:MAPID||'yokohama', name, score:lastEntry.s, level:lastEntry.lv, id:getUid()})}).catch(()=>{});
+  const body=JSON.stringify({stage:MAPID||'yokohama', name, score:lastEntry.s, level:lastEntry.lv, id:getUid()});
+  for(const u of LB_URLS) fetch(u,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'text/plain;charset=utf-8'},body}).catch(()=>{});     // 2か所とも送る
   const B=lbBest(); B[MAPID||'yokohama']={s:lastEntry.s,lv:lastEntry.lv}; try{ localStorage.setItem(LBBEST_KEY,JSON.stringify(B)); }catch(_){}
 }
 function shareScore(done){                            // 今のゲームの成績を、みんなのランキングへ送る。1人1ステージ1件で、自己ベストを超えたときだけ(2回目以降は確認する)
@@ -2396,8 +2400,13 @@ let rankStage='yokohama', rankMode='all', rankToken=0;
 const lbCache={};
 async function loadGlobal(id){                         // みんなの上位(キャッシュは30秒)
   const c=lbCache[id]; if(c && Date.now()-c.t<30000) return c.rows;
-  const r=await fetch(`${LB_URL}?stage=${encodeURIComponent(id)}&t=${Date.now()}`);
-  const rows=await r.json(); lbCache[id]={t:Date.now(),rows}; return rows;
+  const got=await Promise.allSettled(LB_URLS.map(async u=>{ const r=await fetch(`${u}?stage=${encodeURIComponent(id)}&t=${Date.now()}`); if(!r.ok) throw new Error(r.status); const a=await r.json(); if(!Array.isArray(a)) throw new Error('bad'); return a; }));
+  const ok=got.filter(g=>g.status==='fulfilled');
+  if(!ok.length) throw new Error('rank load failed');                                  // 全部だめなときだけ、読み込めなかった表示にする
+  const seen=new Set(), rows=[];
+  for(const e of ok.flatMap(g=>g.value)){ const k=e.name+'|'+e.score+'|'+e.level; if(!seen.has(k)){ seen.add(k); rows.push(e); } }     // 2か所に同じ記録があるときは、1件にまとめる
+  rows.sort((a,b)=>b.score-a.score||b.level-a.level); rows.length=Math.min(rows.length,RANK_MAX);
+  lbCache[id]={t:Date.now(),rows}; return rows;
 }
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rankIds = () => Object.keys(MAPS).filter(isUnlocked);       // 未開放のステージは出さない
