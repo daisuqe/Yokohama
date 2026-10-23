@@ -779,11 +779,11 @@ function askName(cb){                                 // ニックネームを�
 }
 function postScore(name){                             // 返事は待たない(ページを離れても届くよう keepalive)
   const body=JSON.stringify({stage:MAPID||'yokohama', name, score:lastEntry.s, level:lastEntry.lv, id:getUid()});
-  for(const u of LB_URLS) fetch(u,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'text/plain;charset=utf-8'},body}).catch(()=>{});     // 2か所とも送る
+  for(const u of (LB2_URL?[LB2_URL]:LB_URLS)) fetch(u,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'text/plain;charset=utf-8'},body}).catch(()=>{});     // 書き込みはCloudflare(LB2_URL)だけ。読み込みだけ、Googleも合わせる
   const B=lbBest(); B[MAPID||'yokohama']={s:lastEntry.s,lv:lastEntry.lv}; try{ localStorage.setItem(LBBEST_KEY,JSON.stringify(B)); }catch(_){}
 }
 function shareScore(done){                            // 今のゲームの成績を、みんなのランキングへ送る。1人1ステージ1件で、自己ベストを超えたときだけ(2回目以降は確認する)
-  if(!LB_URL || PREVIEW || !lastEntry){ if(done) done(); return; }
+  if(!LB_URLS.length || PREVIEW || !lastEntry){ if(done) done(); return; }
   const prev=lbBest()[MAPID||'yokohama'];
   if(prev && lastEntry.s<=prev.s){ if(done) done(); return; }
   const go=()=>{ const n=playerName(); if(n) postScore(n); if(done) done(); };
@@ -2333,7 +2333,7 @@ $('queryYes').onclick = () => { $('queryPanel').style.display='none'; const f=qu
 $('doneBtn').onclick = () => {                           // クリア後: 名前が未登録なら聞いて、ハイスコアなら共有してから、そのステージのランキングへ
   $('doneBtn').disabled=true;
   recordGame();
-  const posted=()=>{ const wait=(LB_URL && lastEntry && playerName()) ? 1000 : 0;       // 送信が済むのを少し待つ(すぐ読み込むと、自分の記録が出ない)
+  const posted=()=>{ const wait=(LB_URLS.length && lastEntry && playerName()) ? 1000 : 0;       // 送信が済むのを少し待つ(すぐ読み込むと、自分の記録が出ない)
     setTimeout(()=>{
       try{ localStorage.removeItem(SAVE_KEY); }catch(_){}
       window.removeEventListener('pagehide', saveGame); saveOff=true;
@@ -2403,8 +2403,18 @@ async function loadGlobal(id){                         // みんなの上位(キ
   const got=await Promise.allSettled(LB_URLS.map(async u=>{ const r=await fetch(`${u}?stage=${encodeURIComponent(id)}&t=${Date.now()}`); if(!r.ok) throw new Error(r.status); const a=await r.json(); if(!Array.isArray(a)) throw new Error('bad'); return a; }));
   const ok=got.filter(g=>g.status==='fulfilled');
   if(!ok.length) throw new Error('rank load failed');                                  // 全部だめなときだけ、読み込めなかった表示にする
-  const seen=new Set(), rows=[];
-  for(const e of ok.flatMap(g=>g.value)){ const k=e.name+'|'+e.score+'|'+e.level; if(!seen.has(k)){ seen.add(k); rows.push(e); } }     // 2か所に同じ記録があるときは、1件にまとめる
+  // 2か所の記録を1つにする。同じ名前は、同じ人とみなして、高いほうだけを残す(移行中、片方だけが古いスコアのままのことがあるため)。
+  // 同じ場所の中の、同じ名前の別人は、そのまま別々に残す(1つずつ、相手の場所の同じ名前と組にする)
+  let rows=[];
+  for(const g of ok.slice().reverse()){                                                   // 新しい場所(Cloudflare)を先に入れて、古い場所(Google)を重ねる
+    const used=new Set();
+    for(const e of g.value){
+      const k=rows.findIndex((r,i)=>r.name===e.name && !used.has(i) && !r.__mine);
+      if(k<0){ rows.push(Object.assign({__mine:1},e)); continue; }
+      used.add(k); if(e.score>rows[k].score || (e.score===rows[k].score && e.level>rows[k].level)) rows[k]=Object.assign({__mine:rows[k].__mine},e);
+    }
+    rows.forEach(r=>{ delete r.__mine; });
+  }
   rows.sort((a,b)=>b.score-a.score||b.level-a.level); rows.length=Math.min(rows.length,RANK_MAX);
   lbCache[id]={t:Date.now(),rows}; return rows;
 }
@@ -2413,7 +2423,7 @@ const rankIds = () => Object.keys(MAPS).filter(isUnlocked);       // 未開放�
 const rankWide = () => rankIds().length>1 && innerWidth>=rankIds().length*400+120;      // 全ステージが横に収まる幅(1ステージ約400px)のときだけ並べる。入らなければ、タブで1つずつ
 function rankTable(id){                                  // 1ステージ分の表(記録のある順位だけ、最大100位。HTMLを返す)
   const msg=t=>`<table><tr><td style="text-align:center;opacity:.7">${t}</td></tr></table>`;
-  if(LB_URL && rankMode==='all'){
+  if(LB_URLS.length && rankMode==='all'){
     return loadGlobal(id).then(rows=>{
       let h=''; for(let i=0;i<Math.min(rows.length,RANK_MAX);i++){ const e=rows[i]; h += `<tr><td>${i+1}</td><td class="nm">${esc(e.name)}</td><td>${e.level}</td><td>${Number(e.score).toLocaleString('en-US')}</td></tr>`; }
       if(!h) return msg(tr('noRecords'));
@@ -2433,14 +2443,14 @@ function showRank(id){                                  // 狭い画面: 選ん�
   rankStage=id; const my=++rankToken, wide=rankWide();
   for(const b of $('rankTabs').children) b.classList.toggle('on', b.dataset.id===id);
   $('rankTabs').style.display = (!wide && rankIds().length>1) ? 'flex' : 'none';
-  const online = !!LB_URL;
+  const online = !!LB_URLS.length;
   $('rankMode').style.display = online ? 'flex' : 'none';
   $('rankNameRow').style.display = online ? 'flex' : 'none';
   $('rankNameText').textContent = playerName() || '(not set)';
   for(const b of $('rankMode').children) b.classList.toggle('on', b.dataset.m===rankMode);
   $('rankPanel').classList.toggle('wide', wide);
   const ids = wide ? rankIds() : [id];
-  if(LB_URL && rankMode==='all') $('rankBody').innerHTML='<table><tr><td style="text-align:center;opacity:.7">'+tr('loading')+'</td></tr></table>';
+  if(LB_URLS.length && rankMode==='all') $('rankBody').innerHTML='<table><tr><td style="text-align:center;opacity:.7">'+tr('loading')+'</td></tr></table>';
   Promise.all(ids.map(rankTable)).then(tabs=>{
     if(my!==rankToken) return;
     $('rankBody').innerHTML = wide ? ids.map((sid,i)=>`<div class="rankCol"><h4>${MAPS[sid].title}</h4>${tabs[i]}</div>`).join('') : tabs[0];
