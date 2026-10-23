@@ -2403,18 +2403,10 @@ async function loadGlobal(id){                         // みんなの上位(キ
   const got=await Promise.allSettled(LB_URLS.map(async u=>{ const r=await fetch(`${u}?stage=${encodeURIComponent(id)}&t=${Date.now()}`); if(!r.ok) throw new Error(r.status); const a=await r.json(); if(!Array.isArray(a)) throw new Error('bad'); return a; }));
   const ok=got.filter(g=>g.status==='fulfilled');
   if(!ok.length) throw new Error('rank load failed');                                  // 全部だめなときだけ、読み込めなかった表示にする
-  // 2か所の記録を1つにする。同じ名前は、同じ人とみなして、高いほうだけを残す(移行中、片方だけが古いスコアのままのことがあるため)。
-  // 同じ場所の中の、同じ名前の別人は、そのまま別々に残す(1つずつ、相手の場所の同じ名前と組にする)
-  let rows=[];
-  for(const g of ok.slice().reverse()){                                                   // 新しい場所(Cloudflare)を先に入れて、古い場所(Google)を重ねる
-    const used=new Set();
-    for(const e of g.value){
-      const k=rows.findIndex((r,i)=>r.name===e.name && !used.has(i) && !r.__mine);
-      if(k<0){ rows.push(Object.assign({__mine:1},e)); continue; }
-      used.add(k); if(e.score>rows[k].score || (e.score===rows[k].score && e.level>rows[k].level)) rows[k]=Object.assign({__mine:rows[k].__mine},e);
-    }
-    rows.forEach(r=>{ delete r.__mine; });
-  }
+  // 2か所の記録を1つにする。同じ名前は、同じ人とみなして、いちばん高い1件だけを出す
+  const best=new Map();
+  for(const e of ok.flatMap(g=>g.value)){ const b=best.get(e.name); if(!b || e.score>b.score || (e.score===b.score && e.level>b.level)) best.set(e.name,e); }
+  const rows=[...best.values()];
   rows.sort((a,b)=>b.score-a.score||b.level-a.level); rows.length=Math.min(rows.length,RANK_MAX);
   lbCache[id]={t:Date.now(),rows}; return rows;
 }
