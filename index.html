@@ -130,6 +130,15 @@
   #panelBox i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
   #panelBox p{margin:8px 0;font-size:14px;opacity:.75}
   #panelBox button{margin-top:6px;width:100%}
+  /* ダイアログの右上の「×」(ほかのボタンと同じ、塗りつぶしのボタン。「×」は2本の棒で描いて、中央にそろえる)。下の大きな Close ボタンは廃止。内容がスクロールしても、右上に残る */
+  #menuBox button.xClose,#panelBox button.xClose{position:sticky;top:6px;align-self:flex-end;flex:none;width:52px;height:48px;min-height:0;padding:0;margin:-12px -12px -48px 0;z-index:3;
+    border-radius:10px;background:#8fb0c0;color:transparent;font-size:0;box-shadow:0 2px 0 rgba(0,0,0,.28)}
+  #menuBox button.xClose::before,#panelBox button.xClose::before,#menuBox button.xClose::after,#panelBox button.xClose::after{      /* 「×」は、文字ではなく、2本の棒で描く(文字だと、上へずれるので、ぴったり中央にする) */
+    content:'';position:absolute;left:50%;top:50%;width:24px;height:4px;margin:-2px 0 0 -12px;background:#fff;border-radius:2px;transform:rotate(45deg)}
+  #menuBox button.xClose::after,#panelBox button.xClose::after{transform:rotate(-45deg)}
+  #menuBox button.xClose:active,#panelBox button.xClose:active{background:#7a99a9;transform:translateY(2px);box-shadow:none}
+  #menuBox h3{padding-right:52px}
+  #panelBox{display:flex;flex-direction:column}
   #clearToast{position:fixed;left:50%;top:19%;transform:translateX(-50%);display:none;z-index:35;pointer-events:none;white-space:nowrap;text-align:center}
   #clearToast span{display:block;background:linear-gradient(180deg,#fffbd0 0%,#ffd84d 55%,#ff9a1f 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
     filter:drop-shadow(1.5px 0 0 rgba(110,52,0,.88)) drop-shadow(-1.5px 0 0 rgba(110,52,0,.88)) drop-shadow(0 1.5px 0 rgba(110,52,0,.88)) drop-shadow(0 -1.5px 0 rgba(110,52,0,.88)) drop-shadow(0 0 11px rgba(255,208,95,.8)) drop-shadow(0 0 18px rgba(255,190,60,.4))}   /* 背景はなし。茶色の縁取り(少し濃いめ)と、金色の光(2重・ほどよい強さ) */
@@ -190,15 +199,15 @@
   <button class="sub" id="menuBtn">Menu</button>
   </div>
 </div>
-<div id="panel"><div id="panelBox"><div id="panelBody"></div><button id="panelClose">Close</button></div></div>
-<div id="menuPanel"><div id="menuBox"><h3>Menu</h3><button id="newBtn">Give Up</button>
+<div id="panel"><div id="panelBox"><button type="button" class="xClose" id="panelClose" aria-label="Close" title="Close">&times;</button><div id="panelBody"></div></div></div>
+<div id="menuPanel"><div id="menuBox"><button type="button" class="xClose" id="menuClose" aria-label="Close" title="Close">&times;</button><h3>Menu</h3><button id="newBtn">Give Up</button>
   <button class="sub" id="stageBtn">Save &amp; Exit</button>
   <div class="volRow"><label for="sfxVol">SFX</label><input type="range" id="sfxVol" min="0" max="100" step="5" value="50"><span id="sfxVolV">50%</span></div>
   <div class="volRow"><label for="musicVol">Music</label><input type="range" id="musicVol" min="0" max="100" step="5" value="50"><span id="musicVolV">50%</span></div>
   <div class="volRow langRow"><label>Language</label><button class="sub toggle on" id="langJa">Japanese</button><button class="sub toggle" id="langEn">English</button></div>
   <button class="sub" id="manualBtn">How to Play</button>
   <div id="help" style="display:none"></div>
-  <button class="sub" id="menuClose">Close</button></div></div>
+  </div></div>
 <button id="hintOk">OK</button>
 <div id="appsPanel"><div id="appsBox" role="dialog" aria-modal="true"><div id="appsMsg"></div><div id="appsBtns"><button id="appsYes" type="button">Yes</button><button id="appsNo" type="button">No</button></div></div></div>
 <div id="confirmPanel"><div id="menuBox"><h3>Give Up?</h3><div id="confirmMsg"></div>
@@ -207,15 +216,15 @@
   <button id="queryYes">Yes</button><button class="sub" id="queryNo">No</button></div></div>
 <button id="doneBtn">Ranking &#9654;</button>
 <div id="stageSel"><button id="appsBtn" type="button" aria-label="App list"><canvas id="appsIcon" width="16" height="16"></canvas></button><h2>Yokohama</h2><div id="stageWrap"><button id="stageL" class="stageArrow">&#9664;</button><div id="stageList"></div><button id="stageR" class="stageArrow">&#9654;</button></div><div id="titleBtns"><button id="titleRank">Ranking</button><button id="titleManual">How to Play</button></div><div id="copyright" role="button" tabindex="0" title="License">&copy; 2026 daisuqe. All rights reserved.</div></div>
-<div id="rankPanel"><div id="menuBox"><h3>Ranking</h3><div id="rankTabs"></div>
+<div id="rankPanel"><div id="menuBox"><button type="button" class="xClose" id="rankClose" aria-label="Close" title="Close">&times;</button><h3>Ranking</h3><div id="rankTabs"></div>
   <div id="rankMode"><button class="sub on" data-m="all">Global</button><button class="sub" data-m="me">Local</button></div>
   <div id="rankBody"></div>
   <div id="rankNameRow">Name: <b id="rankNameText"></b> <button class="sub" id="rankNameBtn">Change</button></div>
-  <button class="sub" id="rankClose">Close</button></div></div>
+  </div></div>
 <div id="namePanel"><div id="menuBox"><h3>Your Name</h3><div id="nameMsg"></div>
   <input id="nameInput" maxlength="8" autocomplete="off" placeholder="Name"><button id="nameSave">Save</button><button class="sub" id="nameSkip">Skip</button></div></div>
-<div id="licensePanel"><div id="menuBox"><h3>License</h3><div id="licenseBody"></div><button class="sub" id="licenseClose">Close</button></div></div>
-<div id="manualPanel"><div id="menuBox"><h3>How to Play</h3><div id="manualBody"></div><button class="sub" id="manualClose">Close</button></div></div>
+<div id="licensePanel"><div id="menuBox"><button type="button" class="xClose" id="licenseClose" aria-label="Close" title="Close">&times;</button><h3>License</h3><div id="licenseBody"></div></div></div>
+<div id="manualPanel"><div id="menuBox"><button type="button" class="xClose" id="manualClose" aria-label="Close" title="Close">&times;</button><h3>How to Play</h3><div id="manualBody"></div></div></div>
 <div id="fxLayer"></div>
 <div id="fxBanner"></div>
 <div id="mapTitle"></div>
@@ -244,6 +253,7 @@ const TXT = {
     turnSub: '選択中の駒をもう一度押すと取り消し、同じ駒を選ぶとつながります。',
     notMatch: 'つなげられません。選択中の駒をもう一度押すと取り消し、同じ駒を選ぶとつながります。',
     cleared: (lv,sc)=>`おめでとうございます! 街が完成しました （レベル ${lv} ・ ${fmtN(sc)} 点）。右下のボタンでランキングへ。`,
+    rankRetry: 'ランキングにつながりませんでした。次に開いたときに、もう一度送ります',
     highScore: (sc,pv,t)=>`ハイスコア ${fmtN(sc)} 点です（前回 ${fmtN(pv)} 点）。\n${t} のランキングに再登録しますか?`,
     unlocked: t=>`${t} が解放されました`,
     rankFail: 'ランキングを読み込めませんでした。<br>しばらくしてからもう一度お試しください。',
@@ -260,7 +270,7 @@ const TXT = {
     <li>つなげる組み合わせがなくなったら Pass。Undo・Hint・Pass は、ボタンの数字の分だけ新築が増えます。</li>
     <li>大きな建物を作ると、小さな建物が消えます。64を作ると「1」、128を作ると「1と2」、256以上を作ると「1と2と4」の建物が、盤面からまとめて消えます（消えたマスは更地に戻ります）。2048は最大で、それ以上は合体できません。2048を作ったあとは、小さい建物は消えなくなります。</li>
     <li>できた建物の数字に応じて、点数が入ります。数字が1段階大きくなるごとに、1回の点数は4倍になります（2を作ると10点、4で40点、8で160点、16で640点…）。大きな建物を作るほど、点数が一気に増えます。</li>
-    <li>更地がなくなると、街の完成です（ステージクリア）。右下の Ranking ボタンで、ランキングへ進みます。スコアをタップすると内訳が見られます。</li>
+    <li>建物を置ける場所がなくなると、街の完成です（ステージクリア）。右下の Ranking ボタンで、ランキングへ進みます。スコアをタップすると内訳が見られます。</li>
     <li>1ターンごとにデータを保存しています。ブラウザを閉じたり、Save &amp; Exit でトップ画面に戻っても、ゲームを再開できます。途中データはステージ毎に保存されています。</li>
   </ul>`,
   },
@@ -278,6 +288,7 @@ const TXT = {
     turnSub: 'Tap the selected piece again to deselect, or pick a matching piece.',
     notMatch: "Can't connect. Tap the selected piece again to deselect, or pick a matching piece.",
     cleared: (lv,sc)=>`Congratulations! Your city is complete (Level ${lv} · ${fmtN(sc)} pts). Press Ranking at the bottom right.`,
+    rankRetry: 'Could not reach the ranking. The score will be sent again next time you open the game',
     highScore: (sc,pv,t)=>`New high score: ${fmtN(sc)} pts (previous: ${fmtN(pv)}).\nUpdate your ${t} ranking entry?`,
     unlocked: t=>`${t} unlocked`,
     rankFail: 'Could not load the ranking.<br>Please try again later.',
@@ -294,7 +305,7 @@ const TXT = {
     <li>When no merges are left, use Pass. Undo, Hint and Pass add as many new buildings as the number on the button.</li>
     <li>Making a big building erases small ones. 64 erases the 1s, 128 erases the 1s and 2s, and 256 or more erases the 1s, 2s and 4s from the whole board (the cells become empty land). 2048 is the top level and can't be merged further; once a 2048 is built, small buildings are no longer erased.</li>
     <li>Each merge scores points based on the building you make. Every step up multiplies the points by 4 (making a 2 scores 10, a 4 scores 40, an 8 scores 160, a 16 scores 640…). The bigger the building, the more points you get.</li>
-    <li>When no empty land is left, your city is complete (Stage Clear). Press Ranking at the bottom right to go to the ranking. Tap the score to see the breakdown.</li>
+    <li>When there is no place left to build, your city is complete (Stage Clear). Press Ranking at the bottom right to go to the ranking. Tap the score to see the breakdown.</li>
     <li>Your progress is saved every turn. You can close the browser, or return to the title screen with Save &amp; Exit, and resume later. Saved progress is kept separately for each stage.</li>
   </ul>`,
   },
@@ -401,7 +412,8 @@ const PROG_KEY = 'yokohama-progress';
 let PROG = {total:0, best:0, unlocked:{}};
 try{ const d=JSON.parse(localStorage.getItem(PROG_KEY)||'null'); if(d) PROG={total:+d.total||0, best:+d.best||0, unlocked:d.unlocked||{}}; }catch(_){}
 const PREVIEW = new URLSearchParams(location.search).has('preview');   // タイトル画面のカード用: 保存せず、建物でいっぱいの盤面を1枚映す
-const DEV = new URLSearchParams(location.search).has('dev') || PREVIEW;     // ?dev=1 で全ステージを開放(確認用)
+const IS_LOCAL = location.protocol==='file:' || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);     // 自分のパソコンで開いているときだけ
+const DEV = PREVIEW || (IS_LOCAL && new URLSearchParams(location.search).has('dev'));     // ?dev=1 で全ステージを開放(確認用。公開しているページでは、効かない)
 const isUnlocked = id => !UNLOCK[id] || DEV || !!PROG.unlocked[id];
 function saveProgress(){ if(PREVIEW) return; try{ localStorage.setItem(PROG_KEY, JSON.stringify(PROG)); }catch(_){} }
 function checkUnlocks(){                             // 条件を満たしたステージを開放して、新しく開放したものを返す
@@ -572,10 +584,10 @@ function hud(){
   $('turns').textContent = turns;
   const landTotal = terrain.flat().filter(t=>t===LAND).length;      // 建物を置ける更地の数
   $('fill').textContent = Math.round((cnt+sites.size)/landTotal*100)+'%';   // 駒 + 工事中の更地
-  $('undoBtn').disabled = !undoStack.length || !!mover || hintMode;
-  $('hintBtn').disabled = (stuck && !sites.size) || over || hintMode;
+  $('undoBtn').disabled = !undoStack.length || !!mover || hintMode || !!sites.size || annBusy;     // 工事中(新築予定地がある間)は、Undo・Hint・Pass を押せない(新築が同時に2つにならないように)
+  $('hintBtn').disabled = stuck || over || hintMode || !!sites.size || annBusy;
   const passLocked = performance.now()<passLockUntil;
-  $('passBtn').disabled = hintMode || passLocked;
+  $('passBtn').disabled = hintMode || passLocked || !!sites.size || annBusy;
   $('hintOk').style.display = hintMode ? 'block' : 'none';
   $('passBtn').classList.toggle('alert', stuck && !over && !passLocked);
   for(const id of ['undoBtn','hintBtn','passBtn','menuBtn']) $(id).style.display = over && !PREVIEW ? 'none' : '';   // クリア後は、Labels 以外のボタンを消す
@@ -721,7 +733,7 @@ function snapshot(){
 }
 let hintMode=false, hintPairs=null;                                // Hint表示中: OKを押すまで駒の操作は不可
 function undo(){
-  if(over || mover || hintMode || !undoStack.length) return;
+  if(over || mover || hintMode || sites.size || annBusy || !undoStack.length) return;
   const top=undoStack[undoStack.length-1];
   if(freeCount(top.grid,top.sites)<UNDO_SITES){ askGameOver('Undo',undoNow); return; }
   undoNow();
@@ -766,13 +778,9 @@ function startSite(k,avoid,quiet){                          // avoid: 新築を�
 const RANK_KEY = 'yokohama-ranking', RANK_MAX = 100;      // ランキングは、記録のある順位だけを、最大100位まで出す
 function loadRank(){ try{ return JSON.parse(localStorage.getItem(RANK_KEY)||'{}')||{}; }catch(_){ return {}; } }
 // 今のゲームをランキングに登録する(ゲームオーバー・ギブアップ時)。同じゲームは、何度呼んでも1件だけ(更新)
-// ---- みんなのランキング: Google スプレッドシート + Apps Script (gas/Code.gs) に、名前・スコア・レベルを送って共有する ----
-// ★ Apps Script の「ウェブアプリ」のURLを、下の LB_URL に貼ると、オンラインランキングが有効になる(空のままなら、これまでの個人ランキングだけ)
-const LB_URL = (DEV && new URLSearchParams(location.search).get('lb')) || 'https://script.google.com/macros/s/AKfycby5B-mkcTU4v93MlZcLX2jGXPICOLopYgofTt8H3w7xl7ofaaUUamPgixrHuteki2_0oQ/exec';
-// ★ 移行期間: ランキングを2か所(Google と Cloudflare)に送り、2か所の結果をまとめて表示する。
-//   Cloudflare の Worker のURLを LB2_URL に入れると有効になる(空なら Google だけ)。移行が済んだら、LB_URL を空にして、LB2_URL だけにする
+// ---- みんなのランキング: Cloudflare Workers + D1 (cloudflare/) に、名前・スコア・レベルを送って共有する(以前の Google スプレッドシート + Apps Script は、もう使わない) ----
 const LB2_URL = (DEV && new URLSearchParams(location.search).get('lb2')) || 'https://yokohama-ranking.haradadaisuke.workers.dev/';
-const LB_URLS = [LB_URL, LB2_URL].filter(Boolean);
+const LB_URLS = [LB2_URL].filter(Boolean);
 const NAME_KEY='yokohama-name', UID_KEY='yokohama-uid';
 let lastEntry=null, nameSkipped=false, nameDone=null;
 function getUid(){ let u=''; try{ u=localStorage.getItem(UID_KEY)||''; if(!u){ u=Math.random().toString(36).slice(2,10); localStorage.setItem(UID_KEY,u); } }catch(_){ u='anon'; } return u; }
@@ -782,11 +790,40 @@ function lbBest(){ try{ return JSON.parse(localStorage.getItem(LBBEST_KEY)||'{}'
 function askName(cb){                                 // ニックネームを聞く(最大8文字)。一度入れたら覚える
   $('nameInput').value=playerName(); nameDone=cb; $('namePanel').style.display='flex'; setTimeout(()=>$('nameInput').focus(),50);
 }
-function postScore(name){                             // 返事は待たない(ページを離れても届くよう keepalive)
-  const body=JSON.stringify({stage:MAPID||'yokohama', name, score:lastEntry.s, level:lastEntry.lv, id:getUid()});
-  for(const u of (LB2_URL?[LB2_URL]:LB_URLS)) fetch(u,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'text/plain;charset=utf-8'},body}).catch(()=>{});     // 書き込みはCloudflare(LB2_URL)だけ。読み込みだけ、Googleも合わせる
+// 送れなかった成績(通信が切れていた)は、ブラウザに残して、次に開いたときや回線が戻ったときに、もう一度送る
+//   返事は読めない送り方(no-cors)なので、分かるのは「通信できなかった」ときだけ。サーバーが断ったかどうかは、分からない
+const PEND_KEY='yokohama-pending';
+function pendGet(){ try{ return JSON.parse(localStorage.getItem(PEND_KEY)||'[]')||[]; }catch(_){ return []; } }
+function pendSet(a){ try{ if(a.length) localStorage.setItem(PEND_KEY,JSON.stringify(a)); else localStorage.removeItem(PEND_KEY); }catch(_){} }
+const pendSame=(x,e)=>x.stage===e.stage && String(x.name).toLowerCase()===String(e.name).toLowerCase();
+function pendAdd(e){                                   // 同じステージ・同じ名前は、いちばん高い1件だけ残す
+  const a=pendGet().filter(x=>!(pendSame(x,e) && x.score<=e.score));
+  if(!a.some(x=>pendSame(x,e))) a.push(e);
+  pendSet(a);
+}
+function pendDrop(e){ pendSet(pendGet().filter(x=>!(pendSame(x,e) && x.score<=e.score))); }
+async function sendEntry(e){                           // 1件を送る。通信できたら true(返事は読めない)、できなかったら false
+  if(!LB2_URL) return true;
+  const ac=new AbortController(), tm=setTimeout(()=>ac.abort(),8000);
+  try{
+    await fetch(LB2_URL,{method:'POST',mode:'no-cors',keepalive:true,signal:ac.signal,headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({...e,id:getUid()})});     // 書き込みはCloudflare(LB2_URL)だけ。読み込みだけ、Googleも合わせる
+    clearTimeout(tm); return true;
+  }catch(_){ clearTimeout(tm); return false; }
+}
+function postScore(name){                             // 返事は待たない(ページを離れても届くよう keepalive)。通信できなかったときだけ、あとで知らせて、残す
+  const e={stage:MAPID||'yokohama', name, score:lastEntry.s, level:lastEntry.lv};
+  sendEntry(e).then(ok=>{ if(ok) pendDrop(e); else { pendAdd(e); banner('Ranking',tr('rankRetry'),3400); } });
   const B=lbBest(); B[MAPID||'yokohama']={s:lastEntry.s,lv:lastEntry.lv}; try{ localStorage.setItem(LBBEST_KEY,JSON.stringify(B)); }catch(_){}
 }
+let pendBusy=false;
+async function retryPending(){                         // 開いたときに、送れていなかった成績があれば、もう一度送る
+  if(pendBusy || PREVIEW || !LB2_URL) return;
+  const list=pendGet(); if(!list.length) return;
+  pendBusy=true;
+  for(const e of list){ if(await sendEntry(e)) pendDrop(e); else break; }      // まだ通信できない: あとで、また
+  pendBusy=false;
+}
+addEventListener('online',()=>{ retryPending(); });      // 通信が戻ったときも、送り直す
 function shareScore(done){                            // 今のゲームの成績を、みんなのランキングへ送る。1人1ステージ1件で、自己ベストを超えたときだけ(2回目以降は確認する)
   if(!LB_URLS.length || PREVIEW || !lastEntry){ if(done) done(); return; }
   const prev=lbBest()[MAPID||'yokohama'];
@@ -809,7 +846,7 @@ function recordGame(){
 }
 function checkGameOver(){
   if(sites.size) return;                           // 工事中は判定を待つ
-  if(boardFull){ if(!over){ recordGame(); banner('STAGE CLEAR!', `Level ${levelOf(bestValue)} &nbsp;-&nbsp; Score ${score.toLocaleString('en-US')}`, 6500, true); sfxFanfare(true); } over=true; stuck=false; hintMode=false; setMsg(tr('cleared',levelOf(bestValue),score)); }
+  if(boardFull){ if(!over){ recordGame(); banner('STAGE CLEAR!', `Level ${levelOf(bestValue)} &nbsp;-&nbsp; Score ${score.toLocaleString('en-US')}`, 6500, true, ()=>sfxFanfare(true)); } over=true; stuck=false; hintMode=false; setMsg(tr('cleared',levelOf(bestValue),score)); }
   else if(!anyMove()){ stuck=true; setMsg(tr('stuck',PASS_SITES)); }   // 詰み = ゲームオーバーではなくパスできる
   else stuck=false;
   hud();
@@ -817,7 +854,7 @@ function checkGameOver(){
 function updateSites(now){
   for(const [key,st] of sites){
     if(now-st.t0<BUILD_MS){                          // 工事中は土煙を出し続ける
-      if(!(now<st.nextPuff)){ st.nextPuff=now+130; const [px,py]=center(st.x,st.y); puff(px,py,8,{ring:8,rise:6,r:9}); }
+      if(!(now<st.nextPuff)){ st.nextPuff=now+130; const [px,py]=center(st.x,st.y); puff(px,py,24,{ring:8,rise:6,r:9}); }     // 土煙の量は3倍(8 → 24)
       continue;
     }
     sites.delete(key); fresh.add(key);
@@ -842,7 +879,8 @@ function clearLow(nv,b,capped){
     grid[y][x]=0; anims.delete(y*N+x);                  // 判定の上では、すぐ消える。絵は、ゴーストが、あとで消す
   }
   const rule=[1,2,4].filter(v=>v<=maxV);                // お知らせには、実際に消えた数字ではなく、この合体で消える数字(ルール)を、いつも出す(64: 1 / 128: 1, 2 / 256以上: 1, 2, 4)
-  showClearToast(nv,rule); if(gone.size) sfxClear();
+  announce(nv>=MAXV?4600:2400, ()=>showClearToast(nv,rule));      // 「○○ Built! / Block ○ Cleared」も、ほかの告知と重ならないように、順番に出す
+  if(gone.size) sfxClear();
 }
 // ---- 小さい建物が消えるときの演出: 先に、赤い印と × で、何が消えるかを見せて、そのあと縮んで、土煙とともに消える ----
 const ghosts=[];
@@ -894,22 +932,34 @@ function finishMove(){
   const pts=pointsFor(nv);
   const lvBefore=levelOf(bestValue), capped=bestValue>=MAXV;   // 2048が一度でも出ていたら、以後は小さい建物を消さない
   turns++; if(nv>bestValue) bestKind=k; bestValue=Math.max(bestValue,nv); score += pts; stats.pts[k]+=pts; stats.merges[k][tierOf(nv)]++;
-  trackScore(pts);
   const lvUp = levelOf(bestValue)>lvBefore;           // レベルアップ中は、工事音(カンカンカン)を鳴らさない
+  clearLow(nv,b,capped);                              // 1回の合体で、告知がいくつか出るときは、この順番: 「○○ Built!」(消える建物と同時) → LEVEL UP! → NEW STAGE!
   if(lvUp) levelUp(b[0],b[1],levelOf(bestValue),k,nv);
-  clearLow(nv,b,capped); sfxMerge(tierOf(nv));
+  trackScore(pts);
+  sfxMerge(tierOf(nv));
   startSite(randKind(), null, lvUp);   // 新築は1件。種類は、直前に合体した種類とは無関係にランダム(住宅・商業・自然が同じ確率)
   hud();
-  setMsg(`${KINDS[k].name}: ${nameOf(k,nv)}  +${pts.toLocaleString('en-US')}` );
+  setMsg(`${KINDS[k].name}  +${pts.toLocaleString('en-US')}` );      // 建物の名前(Mansion など)は、どこにも出さない
   checkGameOver();
 }
 
 // ---- 派手な通知: レベルアップ・ステージ開放 (バナー + 光の筋 + 紙吹雪 + ファンファーレ) ----
-const bannerQ=[]; let bannerBusy=false;
-function banner(ttl,sub,ms,conf){ bannerQ.push({ttl,sub,ms:ms||3400,conf:!!conf}); if(!bannerBusy) nextBanner(); }
-function nextBanner(){
-  const b=bannerQ.shift(); if(!b){ bannerBusy=false; return; }
-  bannerBusy=true;
+// 告知(バナー・「○○ Built!」・ランキングの知らせ)は、1つの待ち行列に入れて、前の告知が終わってから、次を出す(重ならないように)。
+//   announce(ms, run, end): 順番が来たら run() を実行して、ms ミリ秒あとに end() を実行して、次へ。音・カメラの動きも、run の中に入れて、告知と一緒に始める
+const annQ=[]; let annBusy=false;
+function announce(ms,run,end){ annQ.push({ms,run,end}); if(!annBusy) nextAnn(); }
+function nextAnn(){
+  const a=annQ.shift(); if(!a){ annBusy=false; hud(); return; }      // 告知が全部終わったら、ボタンを押せる状態に戻す
+  annBusy=true; hud();                                              // 告知が出ている間は、駒の選択・Undo・Hint・Pass を受け付けない
+  try{ a.run(); }catch(_){}
+  setTimeout(()=>{ try{ if(a.end) a.end(); }catch(_){} nextAnn(); }, a.ms);
+}
+function banner(ttl,sub,ms,conf,pre){                  // pre: このバナーが出るときに、一緒に実行すること(音・カメラなど)
+  const b={ttl,sub,ms:ms||3400,conf:!!conf};
+  announce(b.ms, ()=>{ if(pre) pre(); showBanner(b); }, hideBanner);
+}
+function hideBanner(){ const el=$('fxBanner'), layer=$('fxLayer'); el.style.display='none'; el.innerHTML=''; layer.innerHTML=''; }
+function showBanner(b){
   const el=$('fxBanner'), layer=$('fxLayer');
   el.style.setProperty('--ms',b.ms+'ms'); layer.style.setProperty('--ms',b.ms+'ms');
   el.innerHTML=`<div class="ttl">${b.ttl}</div><div class="sub">${b.sub||''}</div>`; el.style.display='flex';
@@ -923,7 +973,6 @@ function nextBanner(){
     c.style.width=(6+Math.random()*8)+'px'; c.style.height=(10+Math.random()*10)+'px';
     layer.appendChild(c);
   }
-  setTimeout(()=>{ el.style.display='none'; el.innerHTML=''; layer.innerHTML=''; nextBanner(); }, b.ms);
 }
 function sfxFanfare(big){                              // 上昇するアルペジオ + きらめき
   if(!AC||!soundOn) return;
@@ -939,8 +988,7 @@ function trackScore(pts){
   PROG.total+=pts; PROG.best=Math.max(PROG.best,score);
   const added=checkUnlocks(); saveProgress();
   for(const id of added){
-    sfxFanfare(true);
-    banner('NEW STAGE!', tr('unlocked',MAPS[id].title), 4200, true);
+    banner('NEW STAGE!', tr('unlocked',MAPS[id].title), 4200, true, ()=>sfxFanfare(true));
   }
 }
 // ---- レベルアップ: その建物を画面の中央に大きく映して、派手に表示する ----
@@ -951,9 +999,7 @@ function focusBuilding(x,y){
   camTween={t0:performance.now(), from:{...view}, to:{s:sc, tx:vp.W/2-wx*sc, ty:vp.top+vp.availH/2-(wy-22)*sc}, back:userView?{...userView}:null};
 }
 function levelUp(x,y,lv,k,nv){
-  effects.push({type:'lvburst', x, y, t:performance.now()});
-  focusBuilding(x,y); sfxFanfare(false);
-  banner('LEVEL UP!', `Level ${lv} &nbsp;-&nbsp; ${nameOf(k,nv)}`, 3300);
+  banner('LEVEL UP!', `Level ${lv}`, 3300, false, ()=>{ effects.push({type:'lvburst', x, y, t:performance.now()}); focusBuilding(x,y); sfxFanfare(false); });
 }
 
 // ================= 描画 =================
@@ -1534,8 +1580,78 @@ function drawTrainCar(t){
   ctx.restore();
 }
 
+// ---- 渡り鳥(白・はばたかない): 2分に1回くらい、5〜8羽が、画面の左下から右上へ、斜めの列になって飛んでいく(画面の上に描く。操作のじゃまはしない) ----
+const BIRDS={flock:null, next:0};
+function spawnBirds(now){
+  const W=innerWidth, H=innerHeight, n=5+Math.floor(Math.random()*4);
+  const y0=H*(.72+Math.random()*.3), x0=-70, slope=.5+Math.random()*.25;     // 左下の外から、右上へ(傾き 27〜37度くらい)
+  const ang=Math.atan(slope), ux=Math.cos(ang), uy=-Math.sin(ang);
+  const sz=Math.max(3,Math.min(W,H)*.0065), gap=Math.max(7,Math.min(W,H)*.015);     // sz: 鳥の絵の半分の大きさ(絵全体は 2×sz) / gap: 列の間隔
+  const birds=[];
+  for(let i=0;i<n;i++){                                   // V字の列: 先頭が一番前で、あとの鳥は、左右に交互にならんで、後ろへ
+    const k=Math.ceil(i/2), side=i%2?1:-1;
+    birds.push({back:k*gap*2.1+Math.random()*gap*.4, lat:side*k*gap*1.5+(Math.random()-.5)*gap*.5, ph:Math.random()*6.28, f:.9+Math.random()*.25, sc:.85+Math.random()*.3, bf:.5+Math.random()*.6, ba:.5+Math.random()*.7});
+  }
+  BIRDS.flock={t0:now, x0, y0, ux, uy, sp:Math.max(W,H)*.04, sz, birds, W, H};
+}
+function drawBirds(now){
+  if(PREVIEW) return;
+  if(!BIRDS.next) BIRDS.next=now+(40+Math.random()*50)*1000;          // 最初は、開いて40〜90秒あと
+  if(!BIRDS.flock && now>=BIRDS.next) spawnBirds(now);
+  const F=BIRDS.flock; if(!F) return;
+  const t=(now-F.t0)/1000, d=t*F.sp, W=innerWidth, H=innerHeight;
+  const lx=F.x0+F.ux*d, ly=F.y0+F.uy*d;                           // 先頭の位置
+  if(lx-F.sz*14>W+40 || ly<-F.sz*14-40){ BIRDS.flock=null; BIRDS.next=now+(80+Math.random()*50)*1000; return; }     // 全部、画面の外へ出たら終わり。次は、80〜130秒あと(飛んでいる時間と合わせて、2分に1回くらい)
+  ctx.save(); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineCap='round'; ctx.lineJoin='round'; ctx.shadowColor='rgba(30,70,120,.35)'; ctx.shadowBlur=2; ctx.shadowOffsetY=1;     // 白い鳥。空に溶けないように、ごく薄い影
+  for(const b of F.birds){
+    // 斜め上45度から見るので、列(V字)も、鳥も、地面の上の向きで決めてから、縦を0.7倍につぶして画面に出す
+    const SQ=.7, hx=F.ux, hy=F.uy/SQ, hl=Math.hypot(hx,hy), fx=hx/hl, fy=hy/hl, lx2=-fy, ly2=fx;
+    const gx=-fx*b.back+lx2*b.lat, gy=-fy*b.back+ly2*b.lat;                  // 先頭からの、地面の上のずれ
+    const x=lx+gx, y=ly+gy*SQ+Math.sin(t*b.bf+b.ph)*F.sz*b.ba;     // ゆっくりした上下の動き(1羽ごとに、周期と幅がちがう)
+    const u=F.sz*b.sc*.385; ctx.fillStyle='#fff';     // 鳥の大きさ(前の7割)
+    // トンビのシルエット: 翼は大きく、ふちはなめらか。翼を少し上げて(後ろから見るとVの字)、からだは小さく、尾は短い
+    const P=(f,l)=>[x+(fx*f+lx2*l)*u, y+(fy*f+ly2*l)*u*SQ-Math.abs(l)*.2*u];      // 翼の先ほど、少し高く(上へ)
+    const poly2=pts=>{ ctx.beginPath(); ctx.moveTo(...P(...pts[0])); for(let i=1;i<pts.length;i++) ctx.lineTo(...P(...pts[i])); ctx.closePath(); ctx.fill(); };
+    const half=[[.8,0],[.5,.3],[.62,1.2],[.55,2.1],[.48,2.8],[.32,3.05],[-.35,3.05],[-.5,2.8],[-.62,2.1],[-.8,1.2],[-.85,.45],[-1.15,.4],[-1.3,0]];     // 右半分(頭の先 → 翼の先 → 尾の先)
+    poly2([...half, ...half.slice(1,-1).reverse().map(([f,l])=>[f,-l])]);        // 左半分は、折り返して、つなぐ。からだと翼を、継ぎ目のない1枚の形にする
+  }
+  ctx.restore();
+}
+// 工事のあと、柵が残っている間の建物: 十字型のグロー(4方向に細く伸びる光)が、ゆっくり、ちかちかする。小さく、控えめに。
+//   同時に4つ(周期をずらして、3〜4個が見える)。光るたびに、場所を変える(前と同じ場所には出さない。4つの光は、場所の候補を分け合うので、同時に同じ場所にもならない)
+const SPARK_SPOTS = [[11,-3],[-9,3],[3,-9],[-13,-6],[14,5],[-3,9],[8,12],[-8,-11],[-12,7],[2,-13],[13,-9],[-5,13],[-14,0],[6,-6],[-1,-5],[12,1]];   // 建物の上のあたりの、出現場所の候補(建物の中心の x、上端の y からのずれ)。16か所
+const SPARK_SLOTS = [[1245,0,1],[1467,.37,.75],[1333,.71,.6],[1600,.19,.5]];             // [周期ms, 位相, 大きさ]。最初の2.25倍の速さ(1.5倍を2回)。光 k は、番号が k, k+4, k+8, k+12 の4か所だけを使う
+const SPARK_UP = 11;                                                                       // きらめきを、建物の上へ、このぶん(px)ずらす
+const SPARK_T0 = new Map();                                                              // 柵が出てから(きらめきを始めてから)の時刻
+const sparkHash = (a,b) => { const h=Math.sin(a*12.9898+b*78.233)*43758.5453; return h-Math.floor(h); };
+function sparkIdx(cyc,slot,key){                     // cyc 回目に光る場所の番号(0..3)。1つ前の回から、必ず別の場所へ進む
+  let i=Math.floor(sparkHash(key,slot+1)*4);
+  for(let c=1;c<=cyc;c++) i=(i+1+Math.floor(sparkHash(c+slot*101,key)*3))%4;
+  return i;
+}
+function drawFreshSparkles(now){
+  for(const k of SPARK_T0.keys()) if(!fresh.has(k)) SPARK_T0.delete(k);
+  if(!fresh.size) return;
+  ctx.save();
+  for(const key of fresh){
+    const fx=key%N, fy=key/N|0, v=grid[fy][fx]; if(!v) continue;
+    if(!SPARK_T0.has(key)) SPARK_T0.set(key,now);
+    const el=now-SPARK_T0.get(key), [cx,cy]=center(fx,fy), top=cy-heightOf(v);
+    SPARK_SLOTS.forEach(([per,ph,sz],slot)=>{
+      const u=el/per+ph, cyc=Math.floor(u), t=u-cyc, s=.5-.5*Math.cos(t*Math.PI*2);        // 0 → 1 → 0 を、ゆっくりくり返す
+      if(s<.04) return;
+      const [dx,dy]=SPARK_SPOTS[slot+4*sparkIdx(cyc,slot,key)], x=cx+dx, y=top+dy-SPARK_UP, L=(4.5+6*s)*sz, w=(.8+.6*s)*sz, a=Math.min(1,.28+.62*s);
+      const g=ctx.createRadialGradient(x,y,0,x,y,L*.9); g.addColorStop(0,`rgba(255,248,215,${Math.min(1,a*.95)})`); g.addColorStop(1,'rgba(255,248,215,0)');
+      ctx.globalAlpha=1; ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,L*.9,0,Math.PI*2); ctx.fill();          // やわらかい、小さなグロー
+      ctx.globalAlpha=a; ctx.fillStyle='#fffbe6';
+      ctx.beginPath(); ctx.moveTo(x-L,y); ctx.lineTo(x,y-w); ctx.lineTo(x+L,y); ctx.lineTo(x,y+w); ctx.closePath(); ctx.fill();         // 横の光
+      ctx.beginPath(); ctx.moveTo(x,y-L*1.25); ctx.lineTo(x+w,y); ctx.lineTo(x,y+L*1.25); ctx.lineTo(x-w,y); ctx.closePath(); ctx.fill(); // 縦の光
+    });
+  }
+  ctx.restore();
+}
 function frame(now){
-  const dt=Math.min(.05,(now-(frame.last||now))/1000); frame.last=now;
+  const dt=Math.max(0,Math.min(.05,(now-(frame.last||now))/1000)); frame.last=now;
   updateCars(dt); updateSites(now); updateTrain(dt); updateBoat(dt); updateAmbience(now);
   layout();
   ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,cv.width,cv.height);
@@ -1637,6 +1753,7 @@ function frame(now){
     drawNum(n[0],n[1],n[2],n[3]);
   }
   drawLabels();
+  drawFreshSparkles(now);                                        // 工事直後(柵が残っている間)の建物: 十字のきらめき
   // エフェクト
   effects=effects.filter(e=>now-e.t<(e.type==='dust'?e.life:e.type==='pillar'?1400:e.type==='confetti'?3200:e.type==='lvburst'?2000:900));
   for(const e of effects){
@@ -1739,6 +1856,7 @@ function frame(now){
     ctx.strokeText(e.txt,cx,cy-heightOf(8)-20-t*30); ctx.fillText(e.txt,cx,cy-heightOf(8)-20-t*30);
   }
   if(over && !PREVIEW) drawCelebration(now); else if(FW.on) resetCelebration();      // クリア後: 花火と光の粒
+  drawBirds(now);                                                // 渡り鳥(たまに、左下から右上へ)
   // 移動アニメ更新
   if(mover){
     const t=Math.min(1,(now-mover.t0)/mover.dur), steps=mover.path.length-1;
@@ -2231,7 +2349,7 @@ function nearbyTarget(c,w){
   return best;
 }
 function clickAt(e){
-  if(mover||over||hintMode) return;
+  if(mover||over||hintMode||annBusy) return;                // 告知(バナー・Built!)が出ている間は、駒を選べない
   const c=pick(e), touch=e.pointerType!=='mouse', tol=touch||TOL_FORCE;
   if(!c){ if(sel) deselect(); return; }
   const w=worldOf(e);
@@ -2548,7 +2666,7 @@ function askGameOver(what,ok){
   queryYes=ok; $('queryPanel').style.display='flex';
 }
 function doPass(){
-  if(mover||over||hintMode||performance.now()<passLockUntil) return;
+  if(mover||over||hintMode||sites.size||annBusy||performance.now()<passLockUntil) return;
   if(freeCount(grid,[...sites.values()])<PASS_SITES){ askGameOver('Pass',doPassNow); return; }
   doPassNow();
 }
@@ -2562,7 +2680,7 @@ function doPassNow(){
 }
 $('passBtn').onclick = doPass;
 $('hintBtn').onclick = () => {
-  if(mover||over||hintMode) return;
+  if(mover||over||hintMode||sites.size||annBusy) return;
   const m=anyMove(); if(!m){ setMsg(tr('hintNone')); return; }
   const doHint=()=>{
     const pairs=allMerges();                         // 合体できる、すべての組み合わせ
@@ -2582,6 +2700,7 @@ $('mapTitle').textContent = MAPDEF.title;
 function placeTitle(){ $('mapTitle').style.top = ($('hud').offsetHeight+6)+'px'; }
 addEventListener('resize', placeTitle); placeTitle();
 if(PREVIEW) previewInit(); else if(!loadGame()) newGame();
+setTimeout(retryPending,1500);                       // 前に送れなかった成績があれば、もう一度送る
 if(DEV && new URLSearchParams(location.search).get('demo')==='clear'){        // 確認用: 数字 1・2・4・8 の建物がいっぱいの盤面で、64 → 128 → 256 を作って、祝福と消える演出をくり返す
   let demoN=0;                                                              // 64 → 128 → 256 の順に、くり返す
   const demo=()=>{
