@@ -11,3 +11,4 @@ sample_houses/
 tools/
 music/*.wav
 cloudflare/import.sql
+map_png/
